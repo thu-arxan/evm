@@ -31,6 +31,15 @@ type DB interface {
 	RemoveAccount(address Address) error
 }
 
+// Context provide a context to run a contract on the evm
+type Context interface {
+	GetBlockHash(num uint64) ([]byte, error)
+	GetBlockHeight() uint64
+	GetBlockTime() int64
+	GetDiffulty() uint64
+	GetGasLimit() uint64
+}
+
 // emptyAccount contain nothing
 type emptyAccount struct{}
 

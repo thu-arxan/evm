@@ -499,7 +499,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			blockNumber := stack.PopUint64()
 
 			// todo: may change the name
-			lastBlockHeight := evm.ctx.Number
+			lastBlockHeight := evm.ctx.GetBlockHeight()
 			if blockNumber >= lastBlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
@@ -514,7 +514,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					maybe.PushError(err)
 				}
 				// blockHash := LeftPadWord256(hash)
-				stack.Push(blockHash)
+				stack.Push(core.LeftPadWord256(blockHash))
 				log.Debugf("=> 0x%v\n", blockHash)
 			}
 
@@ -523,17 +523,17 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42
-			blockTime := evm.ctx.BlockTime
+			blockTime := evm.ctx.GetBlockTime()
 			stack.PushUint64(uint64(blockTime))
 			log.Debugf("=> %d\n", blockTime)
 
 		case NUMBER: // 0x43
-			number := evm.ctx.Number
+			number := evm.ctx.GetBlockHeight()
 			stack.PushUint64(number)
 			log.Debugf("=> %d\n", number)
 
 		case DIFFICULTY: // Note: New version deprecated
-			difficulty := evm.ctx.Diffculty
+			difficulty := evm.ctx.GetDiffulty()
 			stack.PushUint64(difficulty)
 			log.Debugf("=> %d\n", difficulty)
 
