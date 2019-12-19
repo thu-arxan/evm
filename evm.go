@@ -269,7 +269,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				z[i] = x[i] & y[i]
 			}
 			stack.Push(z)
-			log.Debugf(" %v & %v = %v\n", x, y, z)
+			log.Debugf("%v & %v = %v\n", x, y, z)
 
 		case OR: // 0x17
 			x, y := stack.Pop(), stack.Pop()
@@ -278,7 +278,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				z[i] = x[i] | y[i]
 			}
 			stack.Push(z)
-			log.Debugf(" %v | %v = %v\n", x, y, z)
+			log.Debugf("%v | %v = %v\n", x, y, z)
 
 		case XOR: // 0x18
 			x, y := stack.Pop(), stack.Pop()
@@ -287,7 +287,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				z[i] = x[i] ^ y[i]
 			}
 			stack.Push(z)
-			log.Debugf(" %v ^ %v = %v\n", x, y, z)
+			log.Debugf("%v ^ %v = %v\n", x, y, z)
 
 		case NOT: // 0x19
 			x := stack.Pop()
@@ -296,7 +296,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				z[i] = ^x[i]
 			}
 			stack.Push(z)
-			log.Debugf(" !%v = %v\n", x, z)
+			log.Debugf("!%v = %v\n", x, z)
 
 		case BYTE: // 0x1A
 			idx := stack.PopUint64()
@@ -306,7 +306,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				res = val[idx]
 			}
 			stack.PushUint64(uint64(res))
-			log.Debugf(" => 0x%X\n", res)
+			log.Debugf("=> 0x%X\n", res)
 
 		case SHL: //0x1B
 			shift, x := stack.PopBigInt(), stack.PopBigInt()
@@ -314,11 +314,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				stack.PushBigInt(reset)
-				log.Debugf(" %v << %v = %v\n", x, shift, reset)
+				log.Debugf("%v << %v = %v\n", x, shift, reset)
 			} else {
 				shiftedValue := x.Lsh(x, uint(shift.Uint64()))
 				stack.PushBigInt(shiftedValue)
-				log.Debugf(" %v << %v = %v\n", x, shift, shiftedValue)
+				log.Debugf("%v << %v = %v\n", x, shift, shiftedValue)
 			}
 
 		case SHR: //0x1C
@@ -327,11 +327,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				stack.PushBigInt(reset)
-				log.Debugf(" %v << %v = %v\n", x, shift, reset)
+				log.Debugf("%v << %v = %v\n", x, shift, reset)
 			} else {
 				shiftedValue := x.Rsh(x, uint(shift.Uint64()))
 				stack.PushBigInt(shiftedValue)
-				log.Debugf(" %v << %v = %v\n", x, shift, shiftedValue)
+				log.Debugf("%v << %v = %v\n", x, shift, shiftedValue)
 			}
 
 		case SAR: //0x1D
@@ -343,11 +343,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					reset.SetInt64(-1)
 				}
 				stack.PushBigInt(reset)
-				log.Debugf(" %v << %v = %v\n", x, shift, reset)
+				log.Debugf("%v << %v = %v\n", x, shift, reset)
 			} else {
 				shiftedValue := x.Rsh(x, uint(shift.Uint64()))
 				stack.PushBigInt(shiftedValue)
-				log.Debugf(" %v << %v = %v\n", x, shift, shiftedValue)
+				log.Debugf("%v << %v = %v\n", x, shift, shiftedValue)
 			}
 
 		case SHA3: // 0x20
@@ -356,30 +356,30 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			data := memory.Read(offset, size)
 			data = crypto.Keccak256(data)
 			stack.PushBytes(data)
-			log.Debugf(" => (%v) %X\n", size, data)
+			log.Debugf("=> (%v) %X\n", size, data)
 
 		case ADDRESS: // 0x30
 			stack.Push(params.Callee.Word256())
-			log.Debugf(" => %v\n", params.Callee)
+			log.Debugf("=> %v\n", params.Callee)
 
 		case BALANCE: // 0x31
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
 			balance := evm.mustGetAccount(maybe, address).GetBalance()
 			stack.PushUint64(balance)
-			log.Debugf(" => %v (%v)\n", balance, address)
+			log.Debugf("=> %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
 			stack.Push(params.Origin.Word256())
-			log.Debugf(" => %v\n", params.Origin)
+			log.Debugf("=> %v\n", params.Origin)
 
 		case CALLER: // 0x33
 			stack.Push(params.Caller.Word256())
-			log.Debugf(" => %v\n", params.Caller)
+			log.Debugf("=> %v\n", params.Caller)
 
 		case CALLVALUE: // 0x34
 			stack.PushUint64(params.Value)
-			log.Debugf(" => %v\n", params.Value)
+			log.Debugf("=> %v\n", params.Value)
 
 		case CALLDATALOAD: // 0x35
 			offset := stack.PopUint64()
@@ -389,11 +389,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 			res := core.LeftPadWord256(data)
 			stack.Push(res)
-			log.Debugf(" => 0x%v\n", res)
+			log.Debugf("=> 0x%v\n", res)
 
 		case CALLDATASIZE: // 0x36
 			stack.PushUint64(uint64(len(params.Input)))
-			log.Debugf(" => %d\n", len(params.Input))
+			log.Debugf("=> %d\n", len(params.Input))
 
 		case CALLDATACOPY: // 0x37
 			memOff := stack.PopBigInt()
@@ -404,12 +404,12 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
 			memory.Write(memOff, data)
-			log.Debugf(" => [%v, %v, %v] %X\n", memOff, inputOff, length, data)
+			log.Debugf("=> [%v, %v, %v] %X\n", memOff, inputOff, length, data)
 
 		case CODESIZE: // 0x38
 			l := uint64(len(code))
 			stack.PushUint64(l)
-			log.Debugf(" => %d\n", l)
+			log.Debugf("=> %d\n", l)
 
 		case CODECOPY: // 0x39
 			memOff := stack.PopBigInt()
@@ -420,14 +420,14 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
 			memory.Write(memOff, data)
-			log.Debugf(" => [%v, %v, %v] %X\n", memOff, codeOff, length, data)
+			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
 		case GASPRICE: // 0x3A
 			// todo: in new version this is call GASPRICE_DEPRECATED
 			// Note: we will always set this to zero
 			// todo
 			stack.Push(core.Zero256)
-			log.Debugf(" => %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
+			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
 
 		case EXTCODESIZE: // 0x3B
 			address := stack.PopAddress()
@@ -435,11 +435,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			acc := evm.getAccount(maybe, address)
 			if acc == nil {
 				stack.Push(core.Zero256)
-				log.Debugf(" => 0\n")
+				log.Debugf("=> 0\n")
 			} else {
 				length := uint64(len(acc.GetEVMCode()))
 				stack.PushUint64(length)
-				log.Debugf(" => %d\n", length)
+				log.Debugf("=> %d\n", length)
 			}
 
 		case EXTCODECOPY: // 0x3C
@@ -458,12 +458,12 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					maybe.PushError(errors.InputOutOfBounds)
 				}
 				memory.Write(memOff, data)
-				log.Debugf(" => [%v, %v, %v] %X\n", memOff, codeOff, length, data)
+				log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 			}
 
 		case RETURNDATASIZE: // 0x3D
 			stack.PushUint64(uint64(len(returnData)))
-			log.Debugf(" => %d\n", len(returnData))
+			log.Debugf("=> %d\n", len(returnData))
 
 		case RETURNDATACOPY: // 0x3E
 			memOff, outputOff, length := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
@@ -475,7 +475,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 
 			memory.Write(memOff, returnData)
-			log.Debugf(" => [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
+			log.Debugf("=> [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
 		case EXTCODEHASH: // 0x3F
 			address := stack.PopAddress()
@@ -501,10 +501,10 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			// todo: may change the name
 			lastBlockHeight := evm.ctx.Number
 			if blockNumber >= lastBlockHeight {
-				log.Debugf(" => attempted to get block hash of a non-existent block: %v", blockNumber)
+				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
 			} else if lastBlockHeight-blockNumber > 32 { // TODO: Replcase the 32 with a variable
-				log.Debugf(" => attempted to get block hash of a block %d outside of the allowed range "+
+				log.Debugf("=> attempted to get block hash of a block %d outside of the allowed range "+
 					"(must be within %d blocks)", blockNumber, 32)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
@@ -515,53 +515,53 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				}
 				// blockHash := LeftPadWord256(hash)
 				stack.Push(blockHash)
-				log.Debugf(" => 0x%v\n", blockHash)
+				log.Debugf("=> 0x%v\n", blockHash)
 			}
 
 		case COINBASE: // 0x41
 			stack.Push(core.Zero256)
-			log.Debugf(" => 0x%v (NOT SUPPORTED)\n", stack.Peek())
+			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42
 			blockTime := evm.ctx.BlockTime
 			stack.PushUint64(uint64(blockTime))
-			log.Debugf(" => %d\n", blockTime)
+			log.Debugf("=> %d\n", blockTime)
 
 		case NUMBER: // 0x43
 			number := evm.ctx.Number
 			stack.PushUint64(number)
-			log.Debugf(" => %d\n", number)
+			log.Debugf("=> %d\n", number)
 
 		case DIFFICULTY: // Note: New version deprecated
 			difficulty := evm.ctx.Diffculty
 			stack.PushUint64(difficulty)
-			log.Debugf(" => %d\n", difficulty)
+			log.Debugf("=> %d\n", difficulty)
 
 		case GASLIMIT: // 0x45
 			stack.PushUint64(*params.Gas)
-			log.Debugf(" => %v\n", *params.Gas)
+			log.Debugf("=> %v\n", *params.Gas)
 
 		case POP: // 0x50
 			popped := stack.Pop()
-			log.Debugf(" => 0x%v\n", popped)
+			log.Debugf("=> 0x%v\n", popped)
 
 		case MLOAD: // 0x51
 			offset := stack.PopBigInt()
 			data := memory.Read(offset, core.BigWord256Bytes)
 			stack.Push(core.LeftPadWord256(data))
-			log.Debugf(" => 0x%X @ 0x%v\n", data, offset)
+			log.Debugf("=> 0x%X @ 0x%v\n", data, offset)
 
 		case MSTORE: // 0x52
 			offset, data := stack.PopBigInt(), stack.Pop()
 			memory.Write(offset, data.Bytes())
-			log.Debugf(" => 0x%v @ 0x%v\n", data, offset)
+			log.Debugf("=> 0x%v @ 0x%v\n", data, offset)
 
 		case MSTORE8: // 0x53
 			offset := stack.PopBigInt()
 			val64 := stack.PopUint64()
 			val := byte(val64 & 0xFF)
 			memory.Write(offset, []byte{val})
-			log.Debugf(" => [%v] 0x%X\n", offset, val)
+			log.Debugf("=> [%v] 0x%X\n", offset, val)
 
 		case SLOAD: // 0x54
 			loc := stack.Pop()
@@ -591,7 +591,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				maybe.PushError(jump(code, pos, &pc))
 				continue
 			} else {
-				log.Debugf(" ~> false\n")
+				log.Debugf("~> false\n")
 			}
 
 		case PC: // 0x58
@@ -603,11 +603,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			// this offset.
 			capacity := memory.Capacity()
 			stack.PushBigInt(capacity)
-			log.Debugf(" => 0x%X\n", capacity)
+			log.Debugf("=> 0x%X\n", capacity)
 
 		case GAS: // 0x5A
 			stack.PushUint64(*params.Gas)
-			log.Debugf(" => %X\n", *params.Gas)
+			log.Debugf("=> %X\n", *params.Gas)
 
 		case JUMPDEST: // 0x5B
 			log.Debugf("\n")
@@ -622,17 +622,17 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			res := core.LeftPadWord256(codeSegment)
 			stack.Push(res)
 			pc += a
-			log.Debugf(" => 0x%v\n", res)
+			log.Debugf("=> 0x%v\n", res)
 
 		case DUP1, DUP2, DUP3, DUP4, DUP5, DUP6, DUP7, DUP8, DUP9, DUP10, DUP11, DUP12, DUP13, DUP14, DUP15, DUP16:
 			n := int(op - DUP1 + 1)
 			stack.Dup(n)
-			log.Debugf(" => [%d] 0x%v\n", n, stack.Peek())
+			log.Debugf("=> [%d] 0x%v\n", n, stack.Peek())
 
 		case SWAP1, SWAP2, SWAP3, SWAP4, SWAP5, SWAP6, SWAP7, SWAP8, SWAP9, SWAP10, SWAP11, SWAP12, SWAP13, SWAP14, SWAP15, SWAP16:
 			n := int(op - SWAP1 + 2)
 			stack.Swap(n)
-			log.Debugf(" => [%d] %v\n", n, stack.Peek())
+			log.Debugf("=> [%d] %v\n", n, stack.Peek())
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
 			// todo
@@ -649,7 +649,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			// 	Topics:  topics,
 			// 	Data:    data,
 			// }))
-			log.Debugf(" => T:%v D:%X\n", topics, data)
+			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
 			// todo
@@ -660,13 +660,13 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 		case RETURN: // 0xF3
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			output := memory.Read(offset, size)
-			log.Debugf(" => [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
+			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			return output, maybe.Error()
 
 		case REVERT: // 0xFD
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			output := memory.Read(offset, size)
-			log.Debugf(" => [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
+			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			maybe.PushError(newRevertException(output))
 			return output, maybe.Error()
 
@@ -691,7 +691,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			maybe.PushError(account.AddBalance(balance))
 			maybe.PushError(evm.db.UpdateAccount(account))
 			maybe.PushError(evm.db.RemoveAccount(params.Callee))
-			log.Debugf(" => (%X) %v\n", receiver[:4], balance)
+			log.Debugf("=> (%X) %v\n", receiver[:4], balance)
 			return nil, maybe.Error()
 
 		case STOP: // 0x00
@@ -762,10 +762,10 @@ func (evm *EVM) mustGetAccount(maybe errors.Sink, address Address) Account {
 func jump(code []byte, to uint64, pc *uint64) error {
 	dest := codeGetOp(code, to)
 	if dest != JUMPDEST {
-		log.Debugf(" ~> %v invalid jump dest %v\n", to, dest)
+		log.Debugf("~> %v invalid jump dest %v\n", to, dest)
 		return errors.InvalidJumpDest
 	}
-	log.Debugf(" ~> %v\n", to)
+	log.Debugf("~> %v\n", to)
 	*pc = to
 	return nil
 }
