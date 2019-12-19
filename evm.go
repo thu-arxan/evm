@@ -424,7 +424,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case GASPRICE: // 0x3A
 			// todo: in new version this is call GASPRICE_DEPRECATED
-			// Note: we will always set this to zero
+			// Note: we will always set this to zero now
 			// todo
 			stack.Push(core.Zero256)
 			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
@@ -498,7 +498,6 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 		case BLOCKHASH: // 0x40
 			blockNumber := stack.PopUint64()
 
-			// todo: may change the name
 			lastBlockHeight := evm.ctx.GetBlockHeight()
 			if blockNumber >= lastBlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
@@ -508,12 +507,10 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					"(must be within %d blocks)", blockNumber, 32)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
-				// todo: reconside this
 				blockHash, err := evm.ctx.GetBlockHash(blockNumber)
 				if err != nil {
 					maybe.PushError(err)
 				}
-				// blockHash := LeftPadWord256(hash)
 				stack.Push(core.LeftPadWord256(blockHash))
 				log.Debugf("=> 0x%v\n", blockHash)
 			}
