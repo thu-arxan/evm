@@ -9,7 +9,8 @@ import (
 	"evm/errors"
 	"evm/util"
 
-	"github.com/hyperledger/burrow/crypto"
+	"evm/crypto"
+
 	"github.com/labstack/gommon/log"
 )
 
