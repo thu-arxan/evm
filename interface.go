@@ -14,6 +14,7 @@ type Account interface {
 	GetCode() []byte
 	GetCodeHash() []byte
 	AddBalance(balance uint64) error
+	SubBalance(balance uint64) error
 }
 
 // Address describe what functions that an Address implementation should provide
@@ -49,4 +50,5 @@ func (account emptyAccount) GetBalance() uint64              { return 0 }
 func (account emptyAccount) GetEVMCode() []byte              { return nil }
 func (account emptyAccount) GetCode() []byte                 { return nil }
 func (account emptyAccount) GetCodeHash() []byte             { return nil }
+func (account emptyAccount) SubBalance(balance uint64) error { return nil }
 func (account emptyAccount) AddBalance(balance uint64) error { return nil }

@@ -62,20 +62,45 @@ func (evm *EVM) Create(params Params, code []byte) ([]byte, core.Address, error)
 
 // Call run code on evm
 func (evm *EVM) Call(params Params, code []byte) ([]byte, error) {
-	// todo: transfer here
+	if err := evm.transfer(params); err != nil {
+		return nil, err
+	}
 
 	// run code if code length is not zero
 	if len(code) > 0 {
-		// evm.stackDepth++
 		output, err := evm.call(params, code)
-		// evm.stackDepth--
 		if err != nil {
 			return nil, err
 		}
 		// evm.cache.Sync(evm.wb)
 		return output, nil
 	}
+
 	return nil, nil
+}
+
+func (evm *EVM) transfer(params Params) error {
+	if params.Value == 0 {
+		return nil
+	}
+
+	from, err := evm.db.GetAccount(params.Caller)
+	if err != nil || from == nil {
+		return errors.InvalidAddress
+	}
+	if err := from.SubBalance(params.Value); err != nil {
+		return err
+	}
+
+	to, err := evm.db.GetAccount(params.Callee)
+	if err != nil || to == nil {
+		return errors.InvalidAddress
+	}
+	if err := to.AddBalance(params.Value); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Just like Call() but does not transfer 'value' or modify the callDepth.
@@ -696,10 +721,8 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			return nil, maybe.Error()
 
 		default:
-			// todo
+			maybe.PushError(errors.UnknownOpcode)
 			log.Debugf("(pc) %-3v Unknown opcode %v\n", pc, op)
-			// maybe.PushError(errors.Errorf(errors.Generic, "unknown opcode %v", op))
-			maybe.PushError(fmt.Errorf("Unknown opcode:%v", op))
 			return nil, maybe.Error()
 		}
 		pc++

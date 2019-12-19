@@ -58,4 +58,5 @@ var (
 	UnresolvedSymbols      = newCode("code has unresolved symbols")
 	InvalidContractCode    = newCode("contract being created with unexpected code")
 	NonExistentAccount     = newCode("account does not exist")
+	UnknownOpcode          = newCode("unknown opcode")
 )
