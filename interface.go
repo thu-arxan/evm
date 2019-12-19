@@ -18,6 +18,7 @@ type Account interface {
 
 // Address describe what functions that an Address implementation should provide
 type Address interface {
+	Word256() core.Word256
 }
 
 // DB describe what function that db should provide to support an evm

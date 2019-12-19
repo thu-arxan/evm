@@ -712,7 +712,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 	}
 }
 
-func (evm *EVM) createAccount(creator, address core.Address) error {
+func (evm *EVM) createAccount(creator, address Address) error {
 	// err := ensurePermission(callFrame, creator, permission.CreateAccount)
 	// if err != nil {
 	// 	return err
@@ -738,7 +738,7 @@ func useGasNegative(gasLeft *uint64, gasToUse uint64) error {
 	return nil
 }
 
-func (evm *EVM) getAccount(maybe errors.Sink, address core.Address) Account {
+func (evm *EVM) getAccount(maybe errors.Sink, address Address) Account {
 	acc, err := evm.db.GetAccount(address)
 	if err != nil {
 		maybe.PushError(err)
@@ -749,7 +749,7 @@ func (evm *EVM) getAccount(maybe errors.Sink, address core.Address) Account {
 
 // Guaranteed to return a non-nil account, if the account does not exist returns a pointer to the zero-value of Account
 // and pushes an error.
-func (evm *EVM) mustGetAccount(maybe errors.Sink, address core.Address) Account {
+func (evm *EVM) mustGetAccount(maybe errors.Sink, address Address) Account {
 	acc := evm.getAccount(maybe, address)
 	if acc == nil {
 		// todo: update this error
