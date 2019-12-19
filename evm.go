@@ -10,7 +10,6 @@ import (
 	"evm/util"
 
 	"github.com/hyperledger/burrow/crypto"
-	"github.com/hyperledger/burrow/execution/evm/abi"
 	"github.com/labstack/gommon/log"
 )
 
@@ -72,7 +71,6 @@ func (evm *EVM) Call(params Params, code []byte) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		// evm.cache.Sync(evm.wb)
 		return output, nil
 	}
 
@@ -110,7 +108,6 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 	var pc uint64
 	var stack = NewStack(DefaultStackCapacity, DefaultStackCapacity, params.Gas, maybe)
 	var memory = evm.memoryProvider(maybe)
-	// cache   = evm.cache
 
 	var returnData []byte
 
@@ -689,7 +686,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			output := memory.Read(offset, size)
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
-			maybe.PushError(newRevertException(output))
+			maybe.PushError(errors.ExecutionReverted)
 			return output, maybe.Error()
 
 		case INVALID: // 0xFE
@@ -788,17 +785,4 @@ func jump(code []byte, to uint64, pc *uint64) error {
 	log.Debugf("~> %v\n", to)
 	*pc = to
 	return nil
-}
-
-func newRevertException(ret []byte) error {
-	code := errors.ExecutionReverted
-	if len(ret) > 0 {
-		// Attempt decode
-		reason, err := abi.UnpackRevert(ret)
-		if err == nil {
-			// return errors.Errorf(code, "with reason '%s'", *reason)
-			return fmt.Errorf("%v with reasone %s", code, *reason)
-		}
-	}
-	return code
 }
