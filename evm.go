@@ -458,7 +458,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				stack.Push(core.Zero256)
 				log.Debugf("=> 0\n")
 			} else {
-				length := uint64(len(acc.GetEVMCode()))
+				length := uint64(len(acc.GetCode()))
 				stack.PushUint64(length)
 				log.Debugf("=> %d\n", length)
 			}
@@ -470,7 +470,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			if acc == nil {
 				maybe.PushError(errors.UnknownAddress)
 			} else {
-				code := acc.GetEVMCode()
+				code := acc.GetCode()
 				memOff := stack.PopBigInt()
 				codeOff := stack.PopUint64()
 				length := stack.PopUint64()

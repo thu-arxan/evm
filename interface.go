@@ -9,8 +9,6 @@ type Account interface {
 	SetCode(code []byte)
 	GetAddress() Address
 	GetBalance() uint64
-	GetEVMCode() []byte
-	// todo: what is the difference between GetEVMCode ans GetCode
 	GetCode() []byte
 	GetCodeHash() []byte
 	AddBalance(balance uint64) error
