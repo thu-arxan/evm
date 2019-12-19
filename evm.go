@@ -36,28 +36,26 @@ func New(ctx Context, db DB) *EVM {
 }
 
 // Create create a contract account, and return an error if there exist a contract on the address
-func (evm *EVM) Create(params Params, code []byte) ([]byte, core.Address, error) {
-	// todo: not implementation
-	// account := evm.createAccount(params.Callee, params.Callee)
-	// // if err != nil {
-	// // 	return nil, core.ZeroAddress, err
-	// // }
+func (evm *EVM) Create(params Params, code []byte) ([]byte, Address, error) {
+	// todo: we may support nil if the user do not want to implementation it
+	address := evm.ctx.GetAddress(params.Caller, code)
+	if err := evm.createAccount(params.Caller, address); err != nil {
+		return nil, nil, err
+	}
 
-	// // Run the contract bytes and return the runtime bytes
-	// output, err := evm.Call(params, code)
-	// if err != nil {
-	// 	return nil, core.ZeroAddress, err
-	// }
-	// account.SetCode(output)
-	// //err = evm.cache.SetAccount(contract)
-	// // err = evm.wb.SetAccount(account)
-	// // if err != nil {
-	// // 	return nil, common.ZeroAddress, err
-	// // }
-	// // evm.cache.Sync(evm.wb)
+	// Run the contract bytes and return the runtime bytes
+	output, err := evm.Call(params, code)
+	if err != nil {
+		return nil, nil, err
+	}
 
-	// return output, account.GetAddress(), nil
-	return nil, core.ZeroAddress, nil
+	account, err := evm.db.GetAccount(address)
+	if err != nil {
+		return nil, nil, err
+	}
+	account.SetCode(output)
+
+	return nil, address, evm.db.UpdateAccount(account)
 }
 
 // Call run code on evm
@@ -731,13 +729,13 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 }
 
 func (evm *EVM) createAccount(creator, address Address) error {
-	// err := ensurePermission(callFrame, creator, permission.CreateAccount)
-	// if err != nil {
-	// 	return err
-	// }
-	// return native.CreateAccount(callFrame, address)
-	// todo:
-	return nil
+	if evm.db.Exist(address) {
+		return errors.InvalidAddress
+	}
+
+	account := evm.ctx.NewAccount(address)
+
+	return evm.db.UpdateAccount(account)
 }
 
 func codeGetOp(code []byte, n uint64) OpCode {

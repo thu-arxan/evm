@@ -24,6 +24,7 @@ type Address interface {
 
 // DB describe what function that db should provide to support an evm
 type DB interface {
+	Exist(address Address) bool
 	GetAccount(address Address) (Account, error)
 	GetStorage(address Address, key core.Word256) (value []byte, err error)
 	SetStorage(address Address, key core.Word256, value []byte) error
@@ -39,6 +40,8 @@ type Context interface {
 	GetBlockTime() int64
 	GetDiffulty() uint64
 	GetGasLimit() uint64
+	GetAddress(caller Address, code []byte) Address
+	NewAccount(address Address) Account
 }
 
 // emptyAccount contain nothing
