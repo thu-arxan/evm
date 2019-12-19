@@ -754,8 +754,7 @@ func (evm *EVM) mustGetAccount(maybe errors.Sink, address Address) Account {
 	if acc == nil {
 		// todo: update this error
 		maybe.PushError(fmt.Errorf("account %v does not exist", address))
-		// todo: here return nil if wrong
-		return nil
+		return emptyAccount{}
 	}
 	return acc
 }

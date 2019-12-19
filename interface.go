@@ -30,3 +30,14 @@ type DB interface {
 	// Remove the account at address
 	RemoveAccount(address Address) error
 }
+
+// emptyAccount contain nothing
+type emptyAccount struct{}
+
+func (account emptyAccount) SetCode(code []byte)             {}
+func (account emptyAccount) GetAddress() Address             { return nil }
+func (account emptyAccount) GetBalance() uint64              { return 0 }
+func (account emptyAccount) GetEVMCode() []byte              { return nil }
+func (account emptyAccount) GetCode() []byte                 { return nil }
+func (account emptyAccount) GetCodeHash() []byte             { return nil }
+func (account emptyAccount) AddBalance(balance uint64) error { return nil }
