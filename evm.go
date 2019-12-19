@@ -380,7 +380,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> (%v) %X\n", size, data)
 
 		case ADDRESS: // 0x30
-			stack.Push(params.Callee.Word256())
+			stack.Push(bytesToWord256(params.Callee.Bytes()))
 			log.Debugf("=> %v\n", params.Callee)
 
 		case BALANCE: // 0x31
@@ -391,11 +391,11 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
-			stack.Push(params.Origin.Word256())
+			stack.Push(bytesToWord256(params.Origin.Bytes()))
 			log.Debugf("=> %v\n", params.Origin)
 
 		case CALLER: // 0x33
-			stack.Push(params.Caller.Word256())
+			stack.Push(bytesToWord256(params.Caller.Bytes()))
 			log.Debugf("=> %v\n", params.Caller)
 
 		case CALLVALUE: // 0x34

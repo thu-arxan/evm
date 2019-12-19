@@ -17,7 +17,10 @@ type Account interface {
 
 // Address describe what functions that an Address implementation should provide
 type Address interface {
-	Word256() core.Word256
+	// It would be better if length = 32
+	// 1. Add zero in left if length < 32
+	// 2. Remove left byte if length > 32(however, this may be harm)
+	Bytes() []byte
 }
 
 // DB describe what function that db should provide to support an evm
@@ -53,3 +56,11 @@ func (account emptyAccount) GetCode() []byte                 { return nil }
 func (account emptyAccount) GetCodeHash() []byte             { return nil }
 func (account emptyAccount) SubBalance(balance uint64) error { return nil }
 func (account emptyAccount) AddBalance(balance uint64) error { return nil }
+
+// todo: implement right
+func bytesToWord256(bytes []byte) core.Word256 {
+	if len(bytes) <= 32 {
+		return core.LeftPadWord256(bytes)
+	}
+	return core.RightPadWord256(bytes)
+}
