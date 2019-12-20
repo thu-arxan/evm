@@ -14,9 +14,10 @@ import (
 	"github.com/labstack/gommon/log"
 )
 
+// Here defines some default stack capacity variables
 const (
-	// DefaultStackCapacity define the default capacity of stack
-	DefaultStackCapacity uint64 = 1024
+	DefaultStackCapacity    uint64 = 1024
+	DefaultMaxStackCapacity uint64 = 32 * 1024
 )
 
 // EVM is the evm
@@ -59,6 +60,7 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 }
 
 // Call run code on evm
+// TODO: Should we record call times to avoid keep calling
 func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
 	if err := evm.transfer(ctx); err != nil {
 		return nil, err
@@ -66,11 +68,7 @@ func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
 
 	// run code if code length is not zero
 	if len(code) > 0 {
-		output, err := evm.call(ctx, code)
-		if err != nil {
-			return nil, err
-		}
-		return output, nil
+		return evm.call(ctx, code)
 	}
 
 	return nil, nil
@@ -105,7 +103,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 	var maybe = errors.NewMaybe()
 
 	var pc uint64
-	var stack = NewStack(DefaultStackCapacity, DefaultStackCapacity, ctx.Gas, maybe)
+	var stack = NewStack(DefaultStackCapacity, DefaultMaxStackCapacity, ctx.Gas, maybe)
 	var memory = evm.memoryProvider(maybe)
 
 	var returnData []byte
@@ -115,11 +113,10 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			return nil, maybe.Error()
 		}
 
-		var op = codeGetOp(code, pc)
+		var op = getOpCode(code, pc)
 		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
 
-		// todo: reconside this gas usage, maybe we need a map deal different kinds of gas
-		maybe.PushError(useGasNegative(ctx.Gas, GasBaseOp))
+		// maybe.PushError(useGasNegative(ctx.Gas, GasBaseOp))
 
 		switch op {
 		case ADD: // 0x01
@@ -220,8 +217,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				bits := uint(back*8 + 7)
 				stack.PushBigInt(core.SignExtend(stack.PopBigInt(), bits))
 			}
-		// Continue leaving the sign extension argument on the stack. This makes sign-extending a no-op if embedded
-		// integer is already one word wide
 
 		case LT: // 0x10
 			x, y := stack.PopBigInt(), stack.PopBigInt()
@@ -380,7 +375,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			log.Debugf("=> (%v) %X\n", size, data)
 
 		case ADDRESS: // 0x30
-			stack.Push(bytesToWord256(ctx.Callee.Bytes()))
+			stack.PushAddress(ctx.Callee)
 			log.Debugf("=> %v\n", ctx.Callee)
 
 		case BALANCE: // 0x31
@@ -391,11 +386,11 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			log.Debugf("=> %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
-			stack.Push(bytesToWord256(ctx.Origin.Bytes()))
+			stack.PushAddress(ctx.Origin)
 			log.Debugf("=> %v\n", ctx.Origin)
 
 		case CALLER: // 0x33
-			stack.Push(bytesToWord256(ctx.Caller.Bytes()))
+			stack.PushAddress(ctx.Caller)
 			log.Debugf("=> %v\n", ctx.Caller)
 
 		case CALLVALUE: // 0x34
@@ -449,6 +444,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			stack.Push(core.Zero256)
 			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
 
+		// TODO: REVIEW TO HERE
 		case EXTCODESIZE: // 0x3B
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
@@ -916,6 +912,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 	}
 }
 
+// todo: Notice that creator is not used now
 func (evm *EVM) createAccount(creator, address Address) error {
 	if evm.db.Exist(address) {
 		return errors.InvalidAddress
@@ -926,7 +923,7 @@ func (evm *EVM) createAccount(creator, address Address) error {
 	return evm.db.UpdateAccount(account)
 }
 
-func codeGetOp(code []byte, n uint64) OpCode {
+func getOpCode(code []byte, n uint64) OpCode {
 	if uint64(len(code)) <= n {
 		return OpCode(0) // stop
 	}
@@ -964,7 +961,7 @@ func (evm *EVM) mustGetAccount(maybe errors.Sink, address Address) Account {
 }
 
 func jump(code []byte, to uint64, pc *uint64) error {
-	dest := codeGetOp(code, to)
+	dest := getOpCode(code, to)
 	if dest != JUMPDEST {
 		log.Debugf("~> %v invalid jump dest %v\n", to, dest)
 		return errors.InvalidJumpDest
