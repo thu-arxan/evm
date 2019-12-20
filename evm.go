@@ -12,8 +12,6 @@ import (
 
 	"evm/crypto"
 
-	"github.com/hyperledger/burrow/execution/native"
-	"github.com/hyperledger/burrow/txs"
 	"github.com/labstack/gommon/log"
 )
 
@@ -561,7 +559,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> %d\n", difficulty)
 
 		case GASLIMIT: // 0x45
-			stack.PushUint64(*params.Gas)
+			stack.PushUint64(evm.ctx.GetGasLimit())
 			log.Debugf("=> %v\n", *params.Gas)
 
 		case POP: // 0x50
@@ -658,7 +656,6 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> [%d] %v\n", n, stack.Peek())
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
-			// todo
 			n := int(op - LOG0)
 			topics := make([]core.Word256, n)
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -671,39 +668,37 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
-			// todo
 			returnData = nil
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input := memory.Read(offset, size)
 
 			// TODO charge for gas to create account _ the code length * GasCreateByte
-			maybe.PushError(useGasNegative(params.Gas, native.GasCreateAccount))
+			maybe.PushError(useGasNegative(params.Gas, GasCreateAccount))
 
 			var newAccountAddress Address
+			var newAccount Account
+			// todo: carefully deal these two opcodes
 			if op == CREATE {
 				evm.sequence++
-				// todo: tx.HashLength
-				nonce := make([]byte, txs.HashLength+8)
+				// Note: 32 is hash length, 8 is nonce length
+				nonce := make([]byte, 32+8)
 				copy(nonce, util.Uint64ToBytes(evm.ctx.GetNonce()))
 
-				binary.BigEndian.PutUint64(nonce[txs.HashLength:], evm.sequence)
-				// newAccountAddress = crypto.NewContractAddress(params.Callee, nonce)
-				// todo: we can see here nonce is useless, so we need to update the function
-				newAccountAddress = evm.ctx.NewAccount(params.Callee).GetAddress()
+				binary.BigEndian.PutUint64(nonce[32:], evm.sequence)
+				// todo: really code is useless?
+				newAccountAddress = evm.ctx.GetAddress(params.Callee, nil, nonce)
+				newAccount = evm.ctx.NewAccount(params.Callee)
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.mustGetAccount(maybe, params.Callee).GetCode()
-				// newAccountAddress = crypto.NewContractAddress2(params.Callee, salt, code)
-				// todo: we can see here nonce and salt is useless, so we need to update the function
+				newAccountAddress = evm.ctx.GetAddress(params.Callee, code, salt.Bytes())
 				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
-				newAccountAddress = evm.ctx.NewAccount(params.Callee).GetAddress()
+				newAccount = evm.ctx.NewAccount(params.Callee)
+				newAccountAddress = newAccount.GetAddress()
 			}
 
-			// Establish a frame in which the putative account exists
-			// childCallFrame, err := st.CallFrame.NewFrame()
-			// maybe.PushError(err)
-			// maybe.PushError(native.CreateAccount(childCallFrame, newAccountAddress))
+			maybe.PushError(evm.db.UpdateAccount(newAccount))
 
 			// Run the input to get the contract code.
 			// NOTE: no need to copy 'input' as per Call contract.
@@ -726,7 +721,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				// maybe.PushError(native.InitChildCode(childCallFrame, newAccountAddress, params.Callee, ret))
 				newAccount := evm.mustGetAccount(maybe, newAccountAddress)
 				newAccount.SetCode(ret)
-				// stack.PushAddress(newAccountAddress)
+				stack.PushAddress(newAccountAddress)
 			}
 
 		case CALL, CALLCODE, DELEGATECALL, STATICCALL: // 0xF1, 0xF2, 0xF4, 0xFA

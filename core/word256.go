@@ -85,8 +85,7 @@ func (w Word256) IsZero() bool {
 	return accum == 0
 }
 
-// Compare compare two word256
-// TODO: return what?
+// Compare compare two word256, it will return 0 if a == b
 func (w Word256) Compare(other Word256) int {
 	return bytes.Compare(w[:], other[:])
 }
