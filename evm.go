@@ -21,17 +21,15 @@ const (
 
 // EVM is the evm
 type EVM struct {
-	ctx            Context
+	bc             Blockchain
 	db             DB
 	memoryProvider func(errorSink errors.Sink) Memory
-
-	sequence uint64
 }
 
 // New is the constructor of EVM
-func New(ctx Context, db DB) *EVM {
+func New(bc Blockchain, db DB) *EVM {
 	return &EVM{
-		ctx:            ctx,
+		bc:             bc,
 		db:             db,
 		memoryProvider: DefaultDynamicMemoryProvider,
 	}
@@ -40,7 +38,7 @@ func New(ctx Context, db DB) *EVM {
 // Create create a contract account, and return an error if there exist a contract on the address
 func (evm *EVM) Create(params Params, code []byte) ([]byte, Address, error) {
 	// todo: we may support nil if the user do not want to implementation it
-	address := evm.ctx.CreateAddress(params.Caller, evm.ctx.GetNonce())
+	address := evm.bc.CreateAddress(params.Caller, evm.bc.GetNonce())
 	if err := evm.createAccount(params.Caller, address); err != nil {
 		return nil, nil, err
 	}
@@ -520,7 +518,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 		case BLOCKHASH: // 0x40
 			blockNumber := stack.PopUint64()
 
-			lastBlockHeight := evm.ctx.GetBlockHeight()
+			lastBlockHeight := evm.bc.GetBlockHeight()
 			if blockNumber >= lastBlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
@@ -529,7 +527,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					"(must be within %d blocks)", blockNumber, 256)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
-				blockHash, err := evm.ctx.GetBlockHash(blockNumber)
+				blockHash, err := evm.bc.GetBlockHash(blockNumber)
 				if err != nil {
 					maybe.PushError(err)
 				}
@@ -542,22 +540,22 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42
-			blockTime := evm.ctx.GetBlockTime()
+			blockTime := evm.bc.GetBlockTime()
 			stack.PushUint64(uint64(blockTime))
 			log.Debugf("=> %d\n", blockTime)
 
 		case NUMBER: // 0x43
-			number := evm.ctx.GetBlockHeight()
+			number := evm.bc.GetBlockHeight()
 			stack.PushUint64(number)
 			log.Debugf("=> %d\n", number)
 
 		case DIFFICULTY: // Note: New version deprecated
-			difficulty := evm.ctx.GetDiffulty()
+			difficulty := evm.bc.GetDiffulty()
 			stack.PushUint64(difficulty)
 			log.Debugf("=> %d\n", difficulty)
 
 		case GASLIMIT: // 0x45
-			stack.PushUint64(evm.ctx.GetGasLimit())
+			stack.PushUint64(evm.bc.GetGasLimit())
 			log.Debugf("=> %v\n", *params.Gas)
 
 		case POP: // 0x50
@@ -677,15 +675,14 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			var newAccountAddress Address
 			var newAccount Account
 			if op == CREATE {
-				evm.sequence++
-				newAccountAddress = evm.ctx.CreateAddress(params.Callee, evm.ctx.GetNonce())
-				newAccount = evm.ctx.NewAccount(params.Callee)
+				newAccountAddress = evm.bc.CreateAddress(params.Callee, evm.bc.GetNonce())
+				newAccount = evm.bc.NewAccount(params.Callee)
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.mustGetAccount(maybe, params.Callee).GetCode()
-				newAccountAddress = evm.ctx.Create2Address(params.Callee, salt.Bytes(), code)
+				newAccountAddress = evm.bc.Create2Address(params.Callee, salt.Bytes(), code)
 				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
-				newAccount = evm.ctx.NewAccount(params.Callee)
+				newAccount = evm.bc.NewAccount(params.Callee)
 				newAccountAddress = newAccount.GetAddress()
 			}
 
@@ -923,7 +920,7 @@ func (evm *EVM) createAccount(creator, address Address) error {
 		return errors.InvalidAddress
 	}
 
-	account := evm.ctx.NewAccount(address)
+	account := evm.bc.NewAccount(address)
 
 	return evm.db.UpdateAccount(account)
 }

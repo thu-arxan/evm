@@ -23,8 +23,9 @@ type Address interface {
 	Bytes() []byte
 }
 
-// DB describe what function that db should provide to support an evm
+// DB describe what function that db should provide to support the evm
 type DB interface {
+	// Exist return if the account exist
 	Exist(address Address) bool
 	GetAccount(address Address) (Account, error)
 	GetStorage(address Address, key core.Word256) (value []byte, err error)
@@ -34,8 +35,8 @@ type DB interface {
 	RemoveAccount(address Address) error
 }
 
-// Context provide a context to run a contract on the evm
-type Context interface {
+// Blockchain describe what function that blockchain system shoudld provide to support the evm
+type Blockchain interface {
 	GetBlockHash(num uint64) ([]byte, error)
 	GetBlockHeight() uint64
 	GetBlockTime() int64
