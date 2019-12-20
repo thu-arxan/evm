@@ -518,7 +518,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 		case BLOCKHASH: // 0x40
 			blockNumber := stack.PopUint64()
 
-			lastBlockHeight := evm.bc.GetBlockHeight()
+			lastBlockHeight := ctx.BlockHeight
 			if blockNumber >= lastBlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
@@ -540,22 +540,22 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42
-			blockTime := evm.bc.GetBlockTime()
+			blockTime := ctx.BlockTime
 			stack.PushUint64(uint64(blockTime))
 			log.Debugf("=> %d\n", blockTime)
 
 		case NUMBER: // 0x43
-			number := evm.bc.GetBlockHeight()
+			number := ctx.BlockHeight
 			stack.PushUint64(number)
 			log.Debugf("=> %d\n", number)
 
 		case DIFFICULTY: // Note: New version deprecated
-			difficulty := evm.bc.GetDiffulty()
+			difficulty := ctx.Difficulty
 			stack.PushUint64(difficulty)
 			log.Debugf("=> %d\n", difficulty)
 
 		case GASLIMIT: // 0x45
-			stack.PushUint64(evm.bc.GetGasLimit())
+			stack.PushUint64(ctx.GasLimit)
 			log.Debugf("=> %v\n", *ctx.Gas)
 
 		case POP: // 0x50

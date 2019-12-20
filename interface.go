@@ -38,10 +38,6 @@ type DB interface {
 // Blockchain describe what function that blockchain system shoudld provide to support the evm
 type Blockchain interface {
 	GetBlockHash(num uint64) ([]byte, error)
-	GetBlockHeight() uint64
-	GetBlockTime() int64
-	GetDiffulty() uint64
-	GetGasLimit() uint64
 	GetNonce() uint64
 	CreateAddress(caller Address, nonce uint64) Address
 	Create2Address(caller Address, salt, code []byte) Address
