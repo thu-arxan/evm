@@ -446,9 +446,8 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
 		case GASPRICE: // 0x3A
-			// todo: in new version this is call GASPRICE_DEPRECATED
 			// Note: we will always set this to zero now
-			// todo
+			// todo: if there is need we support gas price?
 			stack.Push(core.Zero256)
 			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
 
@@ -525,9 +524,9 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			if blockNumber >= lastBlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
-			} else if lastBlockHeight-blockNumber > 32 { // TODO: Replcase the 32 with a variable
+			} else if lastBlockHeight-blockNumber > 256 {
 				log.Debugf("=> attempted to get block hash of a block %d outside of the allowed range "+
-					"(must be within %d blocks)", blockNumber, 32)
+					"(must be within %d blocks)", blockNumber, 256)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
 				blockHash, err := evm.ctx.GetBlockHash(blockNumber)
@@ -662,7 +661,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				topics[i] = stack.Pop()
 			}
 			data := memory.Read(offset, size)
-			// todo: we should do this right
+			// todo: we should do this in a right way
 			maybe.PushError(fmt.Errorf("%v contract %v emit a log which topic is %v and data is %v, however LOG code is not supported now", errors.IllegalWrite, params.Callee, topics, data))
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
@@ -717,7 +716,153 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 
 		case CALL, CALLCODE, DELEGATECALL, STATICCALL: // 0xF1, 0xF2, 0xF4, 0xFA
-			// todo:
+			returnData = nil
+			// Pull arguments off stack:
+			gasLimit := stack.PopUint64()
+			target := stack.PopAddress()
+			value := params.Value
+			// NOTE: for DELEGATECALL value is preserved from the original
+			// caller, as such it is not stored on stack as an argument
+			// for DELEGATECALL and should not be popped.  Instead previous
+			// caller value is used.  for CALL and CALLCODE value is stored
+			// on stack and needs to be overwritten from the given value.
+			if op != DELEGATECALL && op != STATICCALL {
+				value = stack.PopUint64()
+			}
+			// inputs
+			inOffset, inSize := stack.PopBigInt(), stack.PopBigInt()
+			// outputs
+			retOffset := stack.PopBigInt()
+			retSize := stack.PopUint64()
+			log.Debugf("=> %v\n", target)
+
+			// Get the arguments from the memory
+			// EVM contract
+			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			// since CALL is used also for sending funds,
+			// acc may not exist yet. This is an errors.CodedError for
+			// CALLCODE, but not for CALL, though I don't think
+			// ethereum actually cares
+			acc := evm.getAccount(maybe, target)
+			if acc == nil {
+				if op != CALL {
+					maybe.PushError(errors.UnknownAddress)
+					continue
+				}
+				// We're sending funds to a new account so we must create it first
+				if err := evm.createAccount(params.Callee, target); err != nil {
+					maybe.PushError(err)
+					continue
+				}
+				acc = evm.mustGetAccount(maybe, target)
+			}
+
+			// Establish a stack frame and perform the call
+			// todo: we may need cache to support this
+
+			// Ensure that gasLimit is reasonable
+			if *params.Gas < gasLimit {
+				// EIP150 - the 63/64 rule - rather than errors.CodedError we pass this specified fraction of the total available gas
+				gasLimit = *params.Gas - *params.Gas/64
+			}
+			// NOTE: we will return any used gas later.
+			*params.Gas -= gasLimit
+
+			// Setup callee params for call type
+
+			calleeParams := Params{
+				Origin: params.Origin,
+				Input:  memory.Read(inOffset, inSize),
+				Value:  value,
+				Gas:    &gasLimit,
+			}
+
+			// Set up the caller/callee context
+			switch op {
+			case CALL:
+				// Calls contract at target from this contract normally
+				// Value: transferred
+				// Caller: this contract
+				// Storage: target
+				// Code: from target
+
+				// calleeParams.CallType = exec.CallTypeCall
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = target
+
+			case STATICCALL:
+				// Calls contract at target from this contract with no state mutation
+				// Value: not transferred
+				// Caller: this contract
+				// Storage: target (read-only)
+				// Code: from target
+
+				// calleeParams.CallType = exec.CallTypeStatic
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = target
+
+				// childState.CallFrame.ReadOnly()
+				// childState.EventSink = exec.NewLogFreeEventSink(childState.EventSink)
+
+			case CALLCODE:
+				// Calling this contract from itself as if it had the code at target
+				// Value: transferred
+				// Caller: this contract
+				// Storage: this contract
+				// Code: from target
+
+				// calleeParams.CallType = exec.CallTypeCode
+				calleeParams.Caller = params.Callee
+				calleeParams.Callee = params.Callee
+
+			case DELEGATECALL:
+				// Calling this contract from the original caller as if it had the code at target
+				// Value: not transferred
+				// Caller: original caller
+				// Storage: this contract
+				// Code: from target
+
+				// calleeParams.CallType = exec.CallTypeDelegate
+				calleeParams.Caller = params.Caller
+				calleeParams.Callee = params.Callee
+
+			default:
+				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
+			}
+
+			var callErr error
+			returnData, callErr = evm.Call(calleeParams, acc.GetCode())
+
+			if callErr == nil {
+				// Sync error is a hard stop
+				// todo: This rely on a cache
+				// maybe.PushError(childState.CallFrame.Sync())
+			}
+
+			// Push result
+			if callErr != nil {
+				// So we can return nested errors.CodedError if the top level return is an errors.CodedError
+				stack.Push(core.Zero256)
+
+				// if errors.GetCode(callErr) == errors.Codes.ExecutionReverted {
+				// 	memory.Write(retOffset, RightPadBytes(returnData, int(retSize)))
+				// }
+				if callErr == errors.ExecutionReverted {
+					memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
+				}
+			} else {
+				stack.Push(core.One256)
+
+				// Should probably only be necessary when there is no return value and
+				// returnData is empty, but since EVM expects retSize to be respected this will
+				// defensively pad or truncate the portion of returnData to be returned.
+				memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
+			}
+
+			// Handle remaining gas.
+			*params.Gas += *calleeParams.Gas
+
+			log.Debugf("resume %s (%v)\n", params.Callee, params.Gas)
 
 		case RETURN: // 0xF3
 			offset, size := stack.PopBigInt(), stack.PopBigInt()

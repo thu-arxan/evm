@@ -32,3 +32,23 @@ func Uint64ToBytes(i uint64) []byte {
 	binary.BigEndian.PutUint64(buf, i)
 	return buf
 }
+
+// RightPadBytes ...
+func RightPadBytes(slice []byte, l int) []byte {
+	if l < len(slice) {
+		return slice
+	}
+	padded := make([]byte, l)
+	copy(padded[0:len(slice)], slice)
+	return padded
+}
+
+// LeftPadBytes ...
+func LeftPadBytes(slice []byte, l int) []byte {
+	if l < len(slice) {
+		return slice
+	}
+	padded := make([]byte, l)
+	copy(padded[l-len(slice):], slice)
+	return padded
+}
