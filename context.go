@@ -1,7 +1,7 @@
 package evm
 
-// Params defines some params
-type Params struct {
+// Context defines some context
+type Context struct {
 	Origin Address
 	Caller Address
 	Callee Address

@@ -36,15 +36,15 @@ func New(bc Blockchain, db DB) *EVM {
 }
 
 // Create create a contract account, and return an error if there exist a contract on the address
-func (evm *EVM) Create(params Params, code []byte) ([]byte, Address, error) {
+func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 	// todo: we may support nil if the user do not want to implementation it
-	address := evm.bc.CreateAddress(params.Caller, evm.bc.GetNonce())
-	if err := evm.createAccount(params.Caller, address); err != nil {
+	address := evm.bc.CreateAddress(ctx.Caller, evm.bc.GetNonce())
+	if err := evm.createAccount(ctx.Caller, address); err != nil {
 		return nil, nil, err
 	}
 
 	// Run the contract bytes and return the runtime bytes
-	output, err := evm.Call(params, code)
+	output, err := evm.Call(ctx, code)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -59,14 +59,14 @@ func (evm *EVM) Create(params Params, code []byte) ([]byte, Address, error) {
 }
 
 // Call run code on evm
-func (evm *EVM) Call(params Params, code []byte) ([]byte, error) {
-	if err := evm.transfer(params); err != nil {
+func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
+	if err := evm.transfer(ctx); err != nil {
 		return nil, err
 	}
 
 	// run code if code length is not zero
 	if len(code) > 0 {
-		output, err := evm.call(params, code)
+		output, err := evm.call(ctx, code)
 		if err != nil {
 			return nil, err
 		}
@@ -76,24 +76,24 @@ func (evm *EVM) Call(params Params, code []byte) ([]byte, error) {
 	return nil, nil
 }
 
-func (evm *EVM) transfer(params Params) error {
-	if params.Value == 0 {
+func (evm *EVM) transfer(ctx Context) error {
+	if ctx.Value == 0 {
 		return nil
 	}
 
-	from, err := evm.db.GetAccount(params.Caller)
+	from, err := evm.db.GetAccount(ctx.Caller)
 	if err != nil || from == nil {
 		return errors.InvalidAddress
 	}
-	if err := from.SubBalance(params.Value); err != nil {
+	if err := from.SubBalance(ctx.Value); err != nil {
 		return err
 	}
 
-	to, err := evm.db.GetAccount(params.Callee)
+	to, err := evm.db.GetAccount(ctx.Callee)
 	if err != nil || to == nil {
 		return errors.InvalidAddress
 	}
-	if err := to.AddBalance(params.Value); err != nil {
+	if err := to.AddBalance(ctx.Value); err != nil {
 		return err
 	}
 
@@ -101,11 +101,11 @@ func (evm *EVM) transfer(params Params) error {
 }
 
 // Just like Call() but does not transfer 'value' or modify the callDepth.
-func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
+func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 	var maybe = errors.NewMaybe()
 
 	var pc uint64
-	var stack = NewStack(DefaultStackCapacity, DefaultStackCapacity, params.Gas, maybe)
+	var stack = NewStack(DefaultStackCapacity, DefaultStackCapacity, ctx.Gas, maybe)
 	var memory = evm.memoryProvider(maybe)
 
 	var returnData []byte
@@ -116,10 +116,10 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 		}
 
 		var op = codeGetOp(code, pc)
-		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *params.Gas)
+		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
 
 		// todo: reconside this gas usage, maybe we need a map deal different kinds of gas
-		maybe.PushError(useGasNegative(params.Gas, GasBaseOp))
+		maybe.PushError(useGasNegative(ctx.Gas, GasBaseOp))
 
 		switch op {
 		case ADD: // 0x01
@@ -372,7 +372,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 
 		case SHA3: // 0x20
-			maybe.PushError(useGasNegative(params.Gas, GasSha3))
+			maybe.PushError(useGasNegative(ctx.Gas, GasSha3))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			data := memory.Read(offset, size)
 			data = crypto.Keccak256(data)
@@ -380,31 +380,31 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> (%v) %X\n", size, data)
 
 		case ADDRESS: // 0x30
-			stack.Push(bytesToWord256(params.Callee.Bytes()))
-			log.Debugf("=> %v\n", params.Callee)
+			stack.Push(bytesToWord256(ctx.Callee.Bytes()))
+			log.Debugf("=> %v\n", ctx.Callee)
 
 		case BALANCE: // 0x31
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			balance := evm.mustGetAccount(maybe, address).GetBalance()
 			stack.PushUint64(balance)
 			log.Debugf("=> %v (%v)\n", balance, address)
 
 		case ORIGIN: // 0x32
-			stack.Push(bytesToWord256(params.Origin.Bytes()))
-			log.Debugf("=> %v\n", params.Origin)
+			stack.Push(bytesToWord256(ctx.Origin.Bytes()))
+			log.Debugf("=> %v\n", ctx.Origin)
 
 		case CALLER: // 0x33
-			stack.Push(bytesToWord256(params.Caller.Bytes()))
-			log.Debugf("=> %v\n", params.Caller)
+			stack.Push(bytesToWord256(ctx.Caller.Bytes()))
+			log.Debugf("=> %v\n", ctx.Caller)
 
 		case CALLVALUE: // 0x34
-			stack.PushUint64(params.Value)
-			log.Debugf("=> %v\n", params.Value)
+			stack.PushUint64(ctx.Value)
+			log.Debugf("=> %v\n", ctx.Value)
 
 		case CALLDATALOAD: // 0x35
 			offset := stack.PopUint64()
-			data, err := util.SubSlice(params.Input, offset, 32)
+			data, err := util.SubSlice(ctx.Input, offset, 32)
 			if err != nil {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
@@ -413,14 +413,14 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%v\n", res)
 
 		case CALLDATASIZE: // 0x36
-			stack.PushUint64(uint64(len(params.Input)))
-			log.Debugf("=> %d\n", len(params.Input))
+			stack.PushUint64(uint64(len(ctx.Input)))
+			log.Debugf("=> %d\n", len(ctx.Input))
 
 		case CALLDATACOPY: // 0x37
 			memOff := stack.PopBigInt()
 			inputOff := stack.PopUint64()
 			length := stack.PopUint64()
-			data, err := util.SubSlice(params.Input, inputOff, length)
+			data, err := util.SubSlice(ctx.Input, inputOff, length)
 			if err != nil {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
@@ -451,7 +451,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case EXTCODESIZE: // 0x3B
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			acc := evm.getAccount(maybe, address)
 			if acc == nil {
 				stack.Push(core.Zero256)
@@ -464,7 +464,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case EXTCODECOPY: // 0x3C
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			acc := evm.getAccount(maybe, address)
 			if acc == nil {
 				maybe.PushError(errors.UnknownAddress)
@@ -556,7 +556,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case GASLIMIT: // 0x45
 			stack.PushUint64(evm.bc.GetGasLimit())
-			log.Debugf("=> %v\n", *params.Gas)
+			log.Debugf("=> %v\n", *ctx.Gas)
 
 		case POP: // 0x50
 			popped := stack.Pop()
@@ -582,19 +582,19 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case SLOAD: // 0x54
 			loc := stack.Pop()
-			value, err := evm.db.GetStorage(params.Callee, loc)
+			value, err := evm.db.GetStorage(ctx.Callee, loc)
 			if err != nil {
 				maybe.PushError(err)
 			}
 			data := core.LeftPadWord256(value)
 			stack.Push(data)
-			log.Debugf("%v {0x%v = 0x%v}\n", params.Callee, loc, data)
+			log.Debugf("%v {0x%v = 0x%v}\n", ctx.Callee, loc, data)
 
 		case SSTORE: // 0x55
 			loc, data := stack.Pop(), stack.Pop()
-			maybe.PushError(useGasNegative(params.Gas, GasStorageUpdate))
-			maybe.PushError(evm.db.SetStorage(params.Callee, loc, data.Bytes()))
-			log.Debugf("%v {%v := %v}\n", params.Callee, loc, data)
+			maybe.PushError(useGasNegative(ctx.Gas, GasStorageUpdate))
+			maybe.PushError(evm.db.SetStorage(ctx.Callee, loc, data.Bytes()))
+			log.Debugf("%v {%v := %v}\n", ctx.Callee, loc, data)
 
 		case JUMP: // 0x56
 			to := stack.PopUint64()
@@ -623,8 +623,8 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%X\n", capacity)
 
 		case GAS: // 0x5A
-			stack.PushUint64(*params.Gas)
-			log.Debugf("=> %X\n", *params.Gas)
+			stack.PushUint64(*ctx.Gas)
+			log.Debugf("=> %X\n", *ctx.Gas)
 
 		case JUMPDEST: // 0x5B
 			log.Debugf("\n")
@@ -660,7 +660,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 			data := memory.Read(offset, size)
 			// todo: we should do this in a right way
-			maybe.PushError(fmt.Errorf("%v contract %v emit a log which topic is %v and data is %v, however LOG code is not supported now", errors.IllegalWrite, params.Callee, topics, data))
+			maybe.PushError(fmt.Errorf("%v contract %v emit a log which topic is %v and data is %v, however LOG code is not supported now", errors.IllegalWrite, ctx.Callee, topics, data))
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
@@ -670,19 +670,19 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			input := memory.Read(offset, size)
 
 			// TODO charge for gas to create account _ the code length * GasCreateByte
-			maybe.PushError(useGasNegative(params.Gas, GasCreateAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
 
 			var newAccountAddress Address
 			var newAccount Account
 			if op == CREATE {
-				newAccountAddress = evm.bc.CreateAddress(params.Callee, evm.bc.GetNonce())
-				newAccount = evm.bc.NewAccount(params.Callee)
+				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.bc.GetNonce())
+				newAccount = evm.bc.NewAccount(ctx.Callee)
 			} else if op == CREATE2 {
 				salt := stack.Pop()
-				code := evm.mustGetAccount(maybe, params.Callee).GetCode()
-				newAccountAddress = evm.bc.Create2Address(params.Callee, salt.Bytes(), code)
+				code := evm.mustGetAccount(maybe, ctx.Callee).GetCode()
+				newAccountAddress = evm.bc.Create2Address(ctx.Callee, salt.Bytes(), code)
 				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
-				newAccount = evm.bc.NewAccount(params.Callee)
+				newAccount = evm.bc.NewAccount(ctx.Callee)
 				newAccountAddress = newAccount.GetAddress()
 			}
 
@@ -690,13 +690,13 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 			// Run the input to get the contract code.
 			// NOTE: no need to copy 'input' as per Call contract.
-			ret, callErr := evm.Call(Params{
-				Origin: params.Origin,
-				Caller: params.Callee,
+			ret, callErr := evm.Call(Context{
+				Origin: ctx.Origin,
+				Caller: ctx.Callee,
 				Callee: newAccountAddress,
 				Input:  input,
 				Value:  contractValue,
-				Gas:    params.Gas,
+				Gas:    ctx.Gas,
 			}, code)
 			if callErr != nil {
 				stack.Push(core.Zero256)
@@ -706,7 +706,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			} else {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
-				// maybe.PushError(native.InitChildCode(childCallFrame, newAccountAddress, params.Callee, ret))
+				// maybe.PushError(native.InitChildCode(childCallFrame, newAccountAddress, ctx.Callee, ret))
 				newAccount := evm.mustGetAccount(maybe, newAccountAddress)
 				newAccount.SetCode(ret)
 				stack.PushAddress(newAccountAddress)
@@ -717,7 +717,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			// Pull arguments off stack:
 			gasLimit := stack.PopUint64()
 			target := stack.PopAddress()
-			value := params.Value
+			value := ctx.Value
 			// NOTE: for DELEGATECALL value is preserved from the original
 			// caller, as such it is not stored on stack as an argument
 			// for DELEGATECALL and should not be popped.  Instead previous
@@ -735,7 +735,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 			// Get the arguments from the memory
 			// EVM contract
-			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			// since CALL is used also for sending funds,
 			// acc may not exist yet. This is an errors.CodedError for
 			// CALLCODE, but not for CALL, though I don't think
@@ -747,7 +747,7 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 					continue
 				}
 				// We're sending funds to a new account so we must create it first
-				if err := evm.createAccount(params.Callee, target); err != nil {
+				if err := evm.createAccount(ctx.Callee, target); err != nil {
 					maybe.PushError(err)
 					continue
 				}
@@ -758,17 +758,17 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			// todo: we may need cache to support this
 
 			// Ensure that gasLimit is reasonable
-			if *params.Gas < gasLimit {
+			if *ctx.Gas < gasLimit {
 				// EIP150 - the 63/64 rule - rather than errors.CodedError we pass this specified fraction of the total available gas
-				gasLimit = *params.Gas - *params.Gas/64
+				gasLimit = *ctx.Gas - *ctx.Gas/64
 			}
 			// NOTE: we will return any used gas later.
-			*params.Gas -= gasLimit
+			*ctx.Gas -= gasLimit
 
-			// Setup callee params for call type
+			// Setup callee ctx for call type
 
-			calleeParams := Params{
-				Origin: params.Origin,
+			calleeCtx := Context{
+				Origin: ctx.Origin,
 				Input:  memory.Read(inOffset, inSize),
 				Value:  value,
 				Gas:    &gasLimit,
@@ -783,9 +783,9 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				// Storage: target
 				// Code: from target
 
-				// calleeParams.CallType = exec.CallTypeCall
-				calleeParams.Caller = params.Callee
-				calleeParams.Callee = target
+				// calleectx.CallType = exec.CallTypeCall
+				calleeCtx.Caller = ctx.Callee
+				calleeCtx.Callee = target
 
 			case STATICCALL:
 				// Calls contract at target from this contract with no state mutation
@@ -794,9 +794,9 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				// Storage: target (read-only)
 				// Code: from target
 
-				// calleeParams.CallType = exec.CallTypeStatic
-				calleeParams.Caller = params.Callee
-				calleeParams.Callee = target
+				// calleectx.CallType = exec.CallTypeStatic
+				calleeCtx.Caller = ctx.Callee
+				calleeCtx.Callee = target
 
 				// childState.CallFrame.ReadOnly()
 				// childState.EventSink = exec.NewLogFreeEventSink(childState.EventSink)
@@ -808,9 +808,9 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				// Storage: this contract
 				// Code: from target
 
-				// calleeParams.CallType = exec.CallTypeCode
-				calleeParams.Caller = params.Callee
-				calleeParams.Callee = params.Callee
+				// calleectx.CallType = exec.CallTypeCode
+				calleeCtx.Caller = ctx.Callee
+				calleeCtx.Callee = ctx.Callee
 
 			case DELEGATECALL:
 				// Calling this contract from the original caller as if it had the code at target
@@ -819,16 +819,16 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 				// Storage: this contract
 				// Code: from target
 
-				// calleeParams.CallType = exec.CallTypeDelegate
-				calleeParams.Caller = params.Caller
-				calleeParams.Callee = params.Callee
+				// calleectx.CallType = exec.CallTypeDelegate
+				calleeCtx.Caller = ctx.Caller
+				calleeCtx.Callee = ctx.Callee
 
 			default:
 				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
 			}
 
 			var callErr error
-			returnData, callErr = evm.Call(calleeParams, acc.GetCode())
+			returnData, callErr = evm.Call(calleeCtx, acc.GetCode())
 
 			if callErr == nil {
 				// Sync error is a hard stop
@@ -857,9 +857,9 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 			}
 
 			// Handle remaining gas.
-			*params.Gas += *calleeParams.Gas
+			*ctx.Gas += *calleeCtx.Gas
 
-			log.Debugf("resume %s (%v)\n", params.Callee, params.Gas)
+			log.Debugf("resume %s (%v)\n", ctx.Callee, ctx.Gas)
 
 		case RETURN: // 0xF3
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -880,21 +880,21 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 		case SELFDESTRUCT: // 0xFF
 			receiver := stack.PopAddress()
-			maybe.PushError(useGasNegative(params.Gas, GasGetAccount))
+			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			if evm.getAccount(maybe, receiver) == nil {
 				// If receiver address doesn't exist, try to create it
-				maybe.PushError(useGasNegative(params.Gas, GasCreateAccount))
-				err := evm.createAccount(params.Callee, receiver)
+				maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
+				err := evm.createAccount(ctx.Callee, receiver)
 				if err != nil {
 					maybe.PushError(err)
 					continue
 				}
 			}
-			balance := evm.mustGetAccount(maybe, params.Callee).GetBalance()
+			balance := evm.mustGetAccount(maybe, ctx.Callee).GetBalance()
 			account := evm.mustGetAccount(maybe, receiver)
 			maybe.PushError(account.AddBalance(balance))
 			maybe.PushError(evm.db.UpdateAccount(account))
-			maybe.PushError(evm.db.RemoveAccount(params.Callee))
+			maybe.PushError(evm.db.RemoveAccount(ctx.Callee))
 			// todo: we need another log
 			// log.Debugf("=> (%X) %v\n", receiver[:4], balance)
 			return nil, maybe.Error()
