@@ -17,8 +17,3 @@ func (w Word160) Word256() (word256 Word256) {
 	copy(word256[Word256Word160Delta:], w[:])
 	return
 }
-
-// Bytes return the bytes of Word160
-func (w Word160) Bytes() []byte {
-	return w[:]
-}

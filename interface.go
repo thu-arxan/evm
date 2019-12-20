@@ -39,8 +39,11 @@ type DB interface {
 type Blockchain interface {
 	GetBlockHash(num uint64) ([]byte, error)
 	GetNonce() uint64
+	// CreateAddress will be called by CREATE Opcode
 	CreateAddress(caller Address, nonce uint64) Address
+	// Create2Address will be called by CREATE2 Opcode
 	Create2Address(caller Address, salt, code []byte) Address
+	// Note: NewAccount will create a default account in Blockchain service, but please do not append the account into db here
 	NewAccount(address Address) Account
 }
 

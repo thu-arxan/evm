@@ -1,7 +1,6 @@
 package core
 
 import (
-	"math"
 	"math/big"
 )
 
@@ -9,11 +8,6 @@ var big1 = big.NewInt(1)
 
 // Big256 is the big.Int of 256
 var Big256 = big.NewInt(256)
-
-// IsUint64SumOverflow returns whether a + b would be a uint64 overflow
-func IsUint64SumOverflow(a, b uint64) bool {
-	return math.MaxUint64-a < b
-}
 
 // U256 converts a possibly negative big int x into a positive big int encoding a twos complement representation of x
 // truncated to 32 bytes

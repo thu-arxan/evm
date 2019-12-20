@@ -21,8 +21,3 @@ func (address Address) Word256() Word256 {
 func (address Address) Bytes() []byte {
 	return address.Word256().Bytes()
 }
-
-// AddressFromWord256 convert Word256 to Address
-func AddressFromWord256(addr Word256) Address {
-	return Address(addr.Word160())
-}
