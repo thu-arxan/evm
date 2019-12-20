@@ -42,8 +42,8 @@ type Context interface {
 	GetDiffulty() uint64
 	GetGasLimit() uint64
 	GetNonce() uint64
-	// todo: make this clear
-	GetAddress(caller Address, code []byte, opts ...[]byte) Address
+	CreateAddress(caller Address, nonce uint64) Address
+	Create2Address(caller Address, salt, code []byte) Address
 	NewAccount(address Address) Account
 }
 

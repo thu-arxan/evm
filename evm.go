@@ -2,7 +2,6 @@ package evm
 
 import (
 	"bytes"
-	"encoding/binary"
 	"fmt"
 	"math/big"
 
@@ -41,7 +40,7 @@ func New(ctx Context, db DB) *EVM {
 // Create create a contract account, and return an error if there exist a contract on the address
 func (evm *EVM) Create(params Params, code []byte) ([]byte, Address, error) {
 	// todo: we may support nil if the user do not want to implementation it
-	address := evm.ctx.GetAddress(params.Caller, code)
+	address := evm.ctx.CreateAddress(params.Caller, evm.ctx.GetNonce())
 	if err := evm.createAccount(params.Caller, address); err != nil {
 		return nil, nil, err
 	}
@@ -678,21 +677,14 @@ func (evm *EVM) call(params Params, code []byte) ([]byte, error) {
 
 			var newAccountAddress Address
 			var newAccount Account
-			// todo: carefully deal these two opcodes
 			if op == CREATE {
 				evm.sequence++
-				// Note: 32 is hash length, 8 is nonce length
-				nonce := make([]byte, 32+8)
-				copy(nonce, util.Uint64ToBytes(evm.ctx.GetNonce()))
-
-				binary.BigEndian.PutUint64(nonce[32:], evm.sequence)
-				// todo: really code is useless?
-				newAccountAddress = evm.ctx.GetAddress(params.Callee, nil, nonce)
+				newAccountAddress = evm.ctx.CreateAddress(params.Callee, evm.ctx.GetNonce())
 				newAccount = evm.ctx.NewAccount(params.Callee)
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.mustGetAccount(maybe, params.Callee).GetCode()
-				newAccountAddress = evm.ctx.GetAddress(params.Callee, code, salt.Bytes())
+				newAccountAddress = evm.ctx.Create2Address(params.Callee, salt.Bytes(), code)
 				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
 				newAccount = evm.ctx.NewAccount(params.Callee)
 				newAccountAddress = newAccount.GetAddress()
