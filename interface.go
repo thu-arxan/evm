@@ -41,6 +41,7 @@ type Context interface {
 	GetBlockTime() int64
 	GetDiffulty() uint64
 	GetGasLimit() uint64
+	GetNonce() uint64
 	GetAddress(caller Address, code []byte) Address
 	NewAccount(address Address) Account
 }

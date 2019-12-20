@@ -1,6 +1,7 @@
 package util
 
 import (
+	"encoding/binary"
 	"fmt"
 )
 
@@ -23,4 +24,11 @@ func SubSlice(data []byte, offset, length uint64) ([]byte, error) {
 		return ret, nil
 	}
 	return data[offset : offset+length], nil
+}
+
+// Uint64ToBytes turn int64 to []byte
+func Uint64ToBytes(i uint64) []byte {
+	var buf = make([]byte, 8)
+	binary.BigEndian.PutUint64(buf, i)
+	return buf
 }
