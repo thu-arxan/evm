@@ -536,6 +536,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			}
 
 		case COINBASE: // 0x41
+			// todo: we may support coinbase
 			stack.Push(core.Zero256)
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
