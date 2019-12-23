@@ -37,7 +37,6 @@ type DB interface {
 	UpdateAccount(account Account) error
 	// Remove the account at address
 	RemoveAccount(address Address) error
-
 	GetNonce(address Address) uint64
 	AddLog(log *Log)
 }
@@ -53,6 +52,8 @@ type Blockchain interface {
 	Create2Address(caller Address, salt, code []byte) Address
 	// Note: NewAccount will create a default account in Blockchain service, but please do not append the account into db here
 	NewAccount(address Address) Account
+	// BytesToAddress provide a way convert bytes(normally [32]byte) to Address
+	BytesToAddress(bytes []byte) Address
 }
 
 // emptyAccount contain nothing

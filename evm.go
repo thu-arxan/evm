@@ -104,7 +104,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 	var maybe = errors.NewMaybe()
 
 	var pc uint64
-	var stack = NewStack(DefaultStackCapacity, DefaultMaxStackCapacity, ctx.Gas, maybe)
+	var stack = NewStack(DefaultStackCapacity, DefaultMaxStackCapacity, ctx.Gas, maybe, evm.bc.BytesToAddress)
 	var memory = evm.memoryProvider(maybe)
 
 	var returnData []byte

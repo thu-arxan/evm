@@ -18,15 +18,18 @@ type Stack struct {
 
 	gas     *uint64
 	errSink errors.Sink
+
+	toAddressFunc func(bytes []byte) Address
 }
 
 // NewStack is the constructor of Stack
-func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink errors.Sink) *Stack {
+func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink errors.Sink, toAddressFunc func(bytes []byte) Address) *Stack {
 	return &Stack{
-		data:        make([]core.Word256, initialCapacity),
-		maxCapacity: maxCapacity,
-		gas:         gas,
-		errSink:     errSink,
+		data:          make([]core.Word256, initialCapacity),
+		maxCapacity:   maxCapacity,
+		gas:           gas,
+		errSink:       errSink,
+		toAddressFunc: toAddressFunc,
 	}
 }
 
@@ -107,6 +110,9 @@ func (st *Stack) PopBytes() []byte {
 
 // PopAddress pop address from stack
 func (st *Stack) PopAddress() Address {
+	if st.toAddressFunc != nil {
+		return st.toAddressFunc(st.Pop().Bytes())
+	}
 	return st.Pop().Address()
 }
 
