@@ -41,7 +41,7 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 	// todo: we may support nil if the user do not want to implementation it
 	address := evm.bc.CreateAddress(ctx.Caller, evm.bc.GetNonce())
 	if err := evm.createAccount(ctx.Caller, address); err != nil {
-		return nil, nil, err
+		return nil, address, err
 	}
 
 	// Run the contract bytes and return the runtime bytes
@@ -439,33 +439,23 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			acc := evm.getAccount(maybe, address)
-			if acc == nil {
-				stack.Push(core.Zero256)
-				log.Debugf("=> 0\n")
-			} else {
-				length := uint64(len(acc.GetCode()))
-				stack.PushUint64(length)
-				log.Debugf("=> %d\n", length)
-			}
+			length := uint64(len(acc.GetCode()))
+			stack.PushUint64(length)
+			log.Debugf("=> %d\n", length)
 
 		case EXTCODECOPY: // 0x3C
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
-			acc := evm.getAccount(maybe, address)
-			if acc == nil {
-				maybe.PushError(errors.UnknownAddress)
-			} else {
-				code := acc.GetCode()
-				memOff := stack.PopBigInt()
-				codeOff := stack.PopUint64()
-				length := stack.PopUint64()
-				data, err := util.SubSlice(code, codeOff, length)
-				if err != nil {
-					maybe.PushError(errors.InputOutOfBounds)
-				}
-				memory.Write(memOff, data)
-				log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
+			code := evm.getAccount(maybe, address).GetCode()
+			memOff := stack.PopBigInt()
+			codeOff := stack.PopUint64()
+			length := stack.PopUint64()
+			data, err := util.SubSlice(code, codeOff, length)
+			if err != nil {
+				maybe.PushError(errors.InputOutOfBounds)
 			}
+			memory.Write(memOff, data)
+			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
 		case RETURNDATASIZE: // 0x3D
 			stack.PushUint64(uint64(len(returnData)))
@@ -485,32 +475,25 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 		case EXTCODEHASH: // 0x3F
 			address := stack.PopAddress()
-
 			acc := evm.getAccount(maybe, address)
-			if acc == nil {
-				// In case the account does not exist 0 is pushed to the stack.
-				stack.PushUint64(0)
+			// keccak256 hash of a contract's code
+			var extcodehash core.Word256
+			if len(acc.GetCodeHash()) > 0 {
+				copy(extcodehash[:], acc.GetCodeHash())
 			} else {
-				// keccak256 hash of a contract's code
-				var extcodehash core.Word256
-				if len(acc.GetCodeHash()) > 0 {
-					copy(extcodehash[:], acc.GetCodeHash())
-				} else {
-					copy(extcodehash[:], crypto.Keccak256(acc.GetCode()))
-				}
-				stack.Push(extcodehash)
+				copy(extcodehash[:], crypto.Keccak256(acc.GetCode()))
 			}
+			stack.Push(extcodehash)
 
 		case BLOCKHASH: // 0x40
 			blockNumber := stack.PopUint64()
 
-			lastBlockHeight := ctx.BlockHeight
-			if blockNumber >= lastBlockHeight {
+			// Note: Here is >= other than > because block is not generated while running tx
+			if blockNumber >= ctx.BlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
 				maybe.PushError(errors.InvalidBlockNumber)
-			} else if lastBlockHeight-blockNumber > 256 {
-				log.Debugf("=> attempted to get block hash of a block %d outside of the allowed range "+
-					"(must be within %d blocks)", blockNumber, 256)
+			} else if ctx.BlockHeight-blockNumber > 256 {
+				log.Debugf("=> attempted to get block hash of a block %d outof range", blockNumber)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
 				blockHash, err := evm.bc.GetBlockHash(blockNumber)
@@ -543,7 +526,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 		case GASLIMIT: // 0x45
 			stack.PushUint64(ctx.GasLimit)
-			log.Debugf("=> %v\n", *ctx.Gas)
+			log.Debugf("=> %v\n", ctx.GasLimit)
 
 		case POP: // 0x50
 			popped := stack.Pop()
@@ -646,11 +629,15 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				topics[i] = stack.Pop()
 			}
 			data := memory.Read(offset, size)
-			// todo: we should do this in a right way
-			maybe.PushError(fmt.Errorf("%v contract %v emit a log which topic is %v and data is %v, however LOG code is not supported now", errors.IllegalWrite, ctx.Callee, topics, data))
+			evm.db.AddLog(&Log{
+				Address: ctx.Callee,
+				Topics:  topics,
+				Data:    data,
+			})
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
+			// todo: need review
 			returnData = nil
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -660,19 +647,19 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
 
 			var newAccountAddress Address
-			var newAccount Account
 			if op == CREATE {
-				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.bc.GetNonce())
-				newAccount = evm.bc.NewAccount(ctx.Callee)
+				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.db.GetNonce(ctx.Callee))
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.getAccount(maybe, ctx.Callee).GetCode()
 				newAccountAddress = evm.bc.Create2Address(ctx.Callee, salt.Bytes(), code)
-				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
-				newAccount = evm.bc.NewAccount(ctx.Callee)
-				newAccountAddress = newAccount.GetAddress()
 			}
 
+			if evm.db.Exist(newAccountAddress) {
+				maybe.PushError(errors.InvalidAddress)
+			}
+
+			newAccount := evm.bc.NewAccount(newAccountAddress)
 			maybe.PushError(evm.db.UpdateAccount(newAccount))
 
 			// Run the input to get the contract code.
@@ -693,7 +680,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			} else {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
-				// maybe.PushError(native.InitChildCode(childCallFrame, newAccountAddress, ctx.Callee, ret))
 				newAccount := evm.getAccount(maybe, newAccountAddress)
 				newAccount.SetCode(ret)
 				stack.PushAddress(newAccountAddress)
@@ -868,22 +854,12 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 		case SELFDESTRUCT: // 0xFF
 			receiver := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
-			if evm.getAccount(maybe, receiver) == nil {
-				// If receiver address doesn't exist, try to create it
-				maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
-				err := evm.createAccount(ctx.Callee, receiver)
-				if err != nil {
-					maybe.PushError(err)
-					continue
-				}
-			}
-			balance := evm.getAccount(maybe, ctx.Callee).GetBalance()
 			account := evm.getAccount(maybe, receiver)
+			balance := evm.getAccount(maybe, ctx.Callee).GetBalance()
 			maybe.PushError(account.AddBalance(balance))
 			maybe.PushError(evm.db.UpdateAccount(account))
 			maybe.PushError(evm.db.RemoveAccount(ctx.Callee))
-			// todo: we need another log
-			// log.Debugf("=> (%X) %v\n", receiver[:4], balance)
+			log.Debugf("=> (%v) %v\n", receiver, balance)
 			return nil, maybe.Error()
 
 		case STOP: // 0x00
@@ -896,9 +872,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			return nil, maybe.Error()
 		}
 		pc++
-
-		// tood: review staticcal
-		// case STATICCALL, CREATE2:
 	}
 }
 
@@ -915,7 +888,7 @@ func (evm *EVM) createAccount(creator, address Address) error {
 
 func getOpCode(code []byte, n uint64) OpCode {
 	if uint64(len(code)) <= n {
-		return OpCode(0) // stop
+		return STOP
 	}
 	return OpCode(code[n])
 }

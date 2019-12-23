@@ -10,6 +10,7 @@ type Account interface {
 	GetAddress() Address
 	GetBalance() uint64
 	GetCode() []byte
+	// GetCodeHash return the hash of account code, please return [32]byte, and return [32]byte{0, ..., 0} if code is empty
 	GetCodeHash() []byte
 	AddBalance(balance uint64) error
 	SubBalance(balance uint64) error
@@ -28,13 +29,17 @@ type DB interface {
 	// Exist return if the account exist
 	// Note: if account is suicided, return true
 	Exist(address Address) bool
-	// return a default account if unexist
+	// GetStorage return a default account if unexist
 	GetAccount(address Address) Account
+	// GetStorage return an error if key of address is not exist
 	GetStorage(address Address, key core.Word256) (value []byte, err error)
 	SetStorage(address Address, key core.Word256, value []byte) error
 	UpdateAccount(account Account) error
 	// Remove the account at address
 	RemoveAccount(address Address) error
+
+	GetNonce(address Address) uint64
+	AddLog(log *Log)
 }
 
 // Blockchain describe what function that blockchain system shoudld provide to support the evm
