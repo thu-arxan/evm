@@ -23,7 +23,7 @@ const (
 // EVM is the evm
 type EVM struct {
 	bc             Blockchain
-	db             DB
+	cache          *Cache
 	memoryProvider func(errorSink errors.Sink) Memory
 	stackDepth     uint64
 }
@@ -32,7 +32,7 @@ type EVM struct {
 func New(bc Blockchain, db DB) *EVM {
 	return &EVM{
 		bc:             bc,
-		db:             db,
+		cache:          NewCache(db),
 		memoryProvider: DefaultDynamicMemoryProvider,
 	}
 }
@@ -51,10 +51,10 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 		return nil, nil, err
 	}
 
-	account := evm.db.GetAccount(address)
+	account := evm.cache.GetAccount(address)
 	account.SetCode(output)
 
-	return nil, address, evm.db.UpdateAccount(account)
+	return nil, address, evm.cache.UpdateAccount(account)
 }
 
 // Call run code on evm
@@ -84,12 +84,12 @@ func (evm *EVM) transfer(ctx Context) error {
 		return nil
 	}
 
-	from := evm.db.GetAccount(ctx.Caller)
+	from := evm.cache.GetAccount(ctx.Caller)
 	if err := from.SubBalance(ctx.Value); err != nil {
 		return err
 	}
 
-	to := evm.db.GetAccount(ctx.Callee)
+	to := evm.cache.GetAccount(ctx.Callee)
 	if err := to.AddBalance(ctx.Value); err != nil {
 		return err
 	}
@@ -560,7 +560,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 		case SLOAD: // 0x54
 			loc := stack.Pop()
-			value, err := evm.db.GetStorage(ctx.Callee, loc)
+			value, err := evm.cache.GetStorage(ctx.Callee, loc)
 			if err != nil {
 				maybe.PushError(err)
 			}
@@ -571,7 +571,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 		case SSTORE: // 0x55
 			loc, data := stack.Pop(), stack.Pop()
 			maybe.PushError(useGasNegative(ctx.Gas, GasStorageUpdate))
-			maybe.PushError(evm.db.SetStorage(ctx.Callee, loc, data.Bytes()))
+			maybe.PushError(evm.cache.SetStorage(ctx.Callee, loc, data.Bytes()))
 			log.Debugf("%v {%v := %v}\n", ctx.Callee, loc, data)
 
 		case JUMP: // 0x56
@@ -637,7 +637,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				topics[i] = stack.Pop()
 			}
 			data := memory.Read(offset, size)
-			evm.db.AddLog(&Log{
+			evm.cache.AddLog(&Log{
 				Address: ctx.Callee,
 				Topics:  topics,
 				Data:    data,
@@ -655,19 +655,19 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 			var newAccountAddress Address
 			if op == CREATE {
-				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.db.GetNonce(ctx.Callee))
+				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.cache.GetNonce(ctx.Callee))
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.getAccount(maybe, ctx.Callee).GetCode()
 				newAccountAddress = evm.bc.Create2Address(ctx.Callee, salt.Bytes(), code)
 			}
 
-			if evm.db.Exist(newAccountAddress) {
+			if evm.cache.Exist(newAccountAddress) {
 				maybe.PushError(errors.InvalidAddress)
 			}
 
 			newAccount := evm.bc.NewAccount(newAccountAddress)
-			maybe.PushError(evm.db.UpdateAccount(newAccount))
+			maybe.PushError(evm.cache.UpdateAccount(newAccount))
 
 			// Run the input to get the contract code.
 			// NOTE: no need to copy 'input' as per Call contract.
@@ -720,7 +720,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			// acc may not exist yet. This is an errors.CodedError for
 			// CALLCODE, but not for CALL, though I don't think
 			// ethereum actually cares
-			if !evm.db.Exist(target) {
+			if !evm.cache.Exist(target) {
 				if op != CALL {
 					maybe.PushError(errors.UnknownAddress)
 					continue
@@ -863,8 +863,8 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			account := evm.getAccount(maybe, receiver)
 			balance := evm.getAccount(maybe, ctx.Callee).GetBalance()
 			maybe.PushError(account.AddBalance(balance))
-			maybe.PushError(evm.db.UpdateAccount(account))
-			maybe.PushError(evm.db.RemoveAccount(ctx.Callee))
+			maybe.PushError(evm.cache.UpdateAccount(account))
+			maybe.PushError(evm.cache.RemoveAccount(ctx.Callee))
 			log.Debugf("=> (%v) %v\n", receiver, balance)
 			return nil, maybe.Error()
 
@@ -883,13 +883,13 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 // todo: Notice that creator is not used now
 func (evm *EVM) createAccount(creator, address Address) error {
-	if evm.db.Exist(address) {
+	if evm.cache.Exist(address) {
 		return errors.InvalidAddress
 	}
 
 	account := evm.bc.NewAccount(address)
 
-	return evm.db.UpdateAccount(account)
+	return evm.cache.UpdateAccount(account)
 }
 
 func getOpCode(code []byte, n uint64) OpCode {
@@ -908,9 +908,9 @@ func useGasNegative(gasLeft *uint64, gasToUse uint64) error {
 	return nil
 }
 
-// getAccount is a wrapper of evm.db.GetAccount
+// getAccount is a wrapper of evm.cache.GetAccount
 func (evm *EVM) getAccount(maybe errors.Sink, address Address) Account {
-	return evm.db.GetAccount(address)
+	return evm.cache.GetAccount(address)
 }
 
 func jump(code []byte, to uint64, pc *uint64) error {

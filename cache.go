@@ -42,8 +42,8 @@ func (cache *Cache) GetAccount(addr Address) Account {
 	return cache.get(addr).account
 }
 
-// SetAccount set account
-func (cache *Cache) SetAccount(account Account) error {
+// UpdateAccount set account
+func (cache *Cache) UpdateAccount(account Account) error {
 	accInfo := cache.get(account.GetAddress())
 	if accInfo.removed {
 		return fmt.Errorf("UpdateAccount on a removed account: %s", account.GetAddress())
@@ -89,6 +89,18 @@ func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) 
 	accInfo.storage[word256ToString(key)] = value
 	accInfo.updated = true
 	return nil
+}
+
+// GetNonce return the nonce of account
+// todo: implement it in the right way
+func (cache *Cache) GetNonce(address Address) uint64 {
+	return cache.db.GetNonce(address)
+}
+
+// AddLog add log
+// todo: not implement yet
+func (cache *Cache) AddLog(log *Log) {
+
 }
 
 // get the cache accountInfo item creating it if necessary
