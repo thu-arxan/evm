@@ -50,10 +50,7 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 		return nil, nil, err
 	}
 
-	account, err := evm.db.GetAccount(address)
-	if err != nil {
-		return nil, nil, err
-	}
+	account := evm.db.GetAccount(address)
 	account.SetCode(output)
 
 	return nil, address, evm.db.UpdateAccount(account)
@@ -79,18 +76,12 @@ func (evm *EVM) transfer(ctx Context) error {
 		return nil
 	}
 
-	from, err := evm.db.GetAccount(ctx.Caller)
-	if err != nil || from == nil {
-		return errors.InvalidAddress
-	}
+	from := evm.db.GetAccount(ctx.Caller)
 	if err := from.SubBalance(ctx.Value); err != nil {
 		return err
 	}
 
-	to, err := evm.db.GetAccount(ctx.Callee)
-	if err != nil || to == nil {
-		return errors.InvalidAddress
-	}
+	to := evm.db.GetAccount(ctx.Callee)
 	if err := to.AddBalance(ctx.Value); err != nil {
 		return err
 	}
@@ -381,7 +372,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 		case BALANCE: // 0x31
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
-			balance := evm.mustGetAccount(maybe, address).GetBalance()
+			balance := evm.getAccount(maybe, address).GetBalance()
 			stack.PushUint64(balance)
 			log.Debugf("=> %v (%v)\n", balance, address)
 
@@ -444,7 +435,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			stack.Push(core.Zero256)
 			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
 
-		// TODO: REVIEW TO HERE
 		case EXTCODESIZE: // 0x3B
 			address := stack.PopAddress()
 			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
@@ -676,7 +666,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				newAccount = evm.bc.NewAccount(ctx.Callee)
 			} else if op == CREATE2 {
 				salt := stack.Pop()
-				code := evm.mustGetAccount(maybe, ctx.Callee).GetCode()
+				code := evm.getAccount(maybe, ctx.Callee).GetCode()
 				newAccountAddress = evm.bc.Create2Address(ctx.Callee, salt.Bytes(), code)
 				log.Infof("Please fix the usage of salt(%v) and code(%v)", salt, code)
 				newAccount = evm.bc.NewAccount(ctx.Callee)
@@ -704,7 +694,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
 				// maybe.PushError(native.InitChildCode(childCallFrame, newAccountAddress, ctx.Callee, ret))
-				newAccount := evm.mustGetAccount(maybe, newAccountAddress)
+				newAccount := evm.getAccount(maybe, newAccountAddress)
 				newAccount.SetCode(ret)
 				stack.PushAddress(newAccountAddress)
 			}
@@ -748,7 +738,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 					maybe.PushError(err)
 					continue
 				}
-				acc = evm.mustGetAccount(maybe, target)
+				acc = evm.getAccount(maybe, target)
 			}
 
 			// Establish a stack frame and perform the call
@@ -887,8 +877,8 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 					continue
 				}
 			}
-			balance := evm.mustGetAccount(maybe, ctx.Callee).GetBalance()
-			account := evm.mustGetAccount(maybe, receiver)
+			balance := evm.getAccount(maybe, ctx.Callee).GetBalance()
+			account := evm.getAccount(maybe, receiver)
 			maybe.PushError(account.AddBalance(balance))
 			maybe.PushError(evm.db.UpdateAccount(account))
 			maybe.PushError(evm.db.RemoveAccount(ctx.Callee))
@@ -939,25 +929,9 @@ func useGasNegative(gasLeft *uint64, gasToUse uint64) error {
 	return nil
 }
 
+// getAccount is a wrapper of evm.db.GetAccount
 func (evm *EVM) getAccount(maybe errors.Sink, address Address) Account {
-	acc, err := evm.db.GetAccount(address)
-	if err != nil {
-		maybe.PushError(err)
-		return nil
-	}
-	return acc
-}
-
-// Guaranteed to return a non-nil account, if the account does not exist returns a pointer to the zero-value of Account
-// and pushes an error.
-func (evm *EVM) mustGetAccount(maybe errors.Sink, address Address) Account {
-	acc := evm.getAccount(maybe, address)
-	if acc == nil {
-		// todo: update this error
-		maybe.PushError(fmt.Errorf("account %v does not exist", address))
-		return emptyAccount{}
-	}
-	return acc
+	return evm.db.GetAccount(address)
 }
 
 func jump(code []byte, to uint64, pc *uint64) error {

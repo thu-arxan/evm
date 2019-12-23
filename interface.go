@@ -26,8 +26,10 @@ type Address interface {
 // DB describe what function that db should provide to support the evm
 type DB interface {
 	// Exist return if the account exist
+	// Note: if account is suicided, return true
 	Exist(address Address) bool
-	GetAccount(address Address) (Account, error)
+	// return a default account if unexist
+	GetAccount(address Address) Account
 	GetStorage(address Address, key core.Word256) (value []byte, err error)
 	SetStorage(address Address, key core.Word256, value []byte) error
 	UpdateAccount(account Account) error
