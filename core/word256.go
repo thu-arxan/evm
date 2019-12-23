@@ -3,6 +3,7 @@ package core
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"math/big"
 
 	hex "github.com/tmthrgd/go-hex"
@@ -106,4 +107,15 @@ func LeftPadWord256(bz []byte) (word Word256) {
 // Postfix return the postfix of word256
 func (w Word256) Postfix(n int) []byte {
 	return w[32-n:]
+}
+
+// BytesToWord256 convert bytes to Word256
+// TODO: We may review this funciton
+func BytesToWord256(data []byte) (Word256, error) {
+	var word Word256
+	if len(data) != Word256Bytes {
+		return Zero256, fmt.Errorf("The length of data is %d other than %d", len(data), Word256Bytes)
+	}
+	copy(word[:], data)
+	return word, nil
 }

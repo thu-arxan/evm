@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/binary"
 	"fmt"
+	"reflect"
 )
 
 // SubSlice returns a subslice from offset of length length and a bool
@@ -51,4 +52,23 @@ func LeftPadBytes(slice []byte, l int) []byte {
 	padded := make([]byte, l)
 	copy(padded[l-len(slice):], slice)
 	return padded
+}
+
+// Contain return if the target which is a map or slice contains the obj
+func Contain(target interface{}, obj interface{}) bool {
+	targetValue := reflect.ValueOf(target)
+	switch reflect.TypeOf(target).Kind() {
+	case reflect.Slice, reflect.Array:
+		for i := 0; i < targetValue.Len(); i++ {
+			if targetValue.Index(i).Interface() == obj {
+				return true
+			}
+		}
+	case reflect.Map:
+		if targetValue.MapIndex(reflect.ValueOf(obj)).IsValid() {
+			return true
+		}
+	}
+
+	return false
 }
