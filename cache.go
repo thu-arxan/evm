@@ -31,7 +31,7 @@ func NewCache(db DB) *Cache {
 
 // Exist return if an account exist
 func (cache *Cache) Exist(addr Address) bool {
-	if util.Contain(cache.accounts, string(addr.Bytes())) {
+	if util.Contain(cache.accounts, addressToString(addr)) {
 		return true
 	}
 	return cache.db.Exist(addr)
@@ -65,7 +65,6 @@ func (cache *Cache) RemoveAccount(address Address) error {
 
 // GetStorage returns the key of an address if exist, else returns an error
 func (cache *Cache) GetStorage(address Address, key core.Word256) ([]byte, error) {
-	// fmt.Printf("GetStorage of address %s and key %b\n", address.String(), key)
 	accInfo := cache.get(address)
 
 	if util.Contain(accInfo.storage, word256ToString(key)) {
@@ -85,58 +84,31 @@ func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) 
 	// fmt.Printf("!!!Set storage %s at key %b and value is %b\n", address.String(), key, value)
 	accInfo := cache.get(address)
 	if accInfo.removed {
-		return fmt.Errorf("SetStorage on a removed account: %s", string(address.Bytes()))
+		return fmt.Errorf("SetStorage on a removed account: %s", addressToString(address))
 	}
 	accInfo.storage[word256ToString(key)] = value
 	accInfo.updated = true
 	return nil
 }
 
-// Sync sync changes to db
-// If the sync return an error, it may cause something wrong, so it should be
-// deal with by the developer.
-// Also, this function may deal with the address and key in an order, so this
-// function should be rethink if necessary.
-// TODO: Sync should panic rather than return an error
-// func (cache *Cache) Sync(wb db.WriteBatch) error {
-// 	var err error
-// 	for address, account := range cache.accounts {
-// 		if account.removed {
-// 			if err = wb.RemoveAccount(stringToAddress(address)); err != nil {
-// 				return err
-// 			}
-// 		} else if account.updated {
-// 			// err = wb.SetAccount(account.account)
-// 			// if err != nil {
-// 			// 	return err
-// 			// }
-// 			// for key, value := range account.storage {
-// 			// 	if err = wb.SetStorage(stringToAddress(address), stringToWord256(key), value); err != nil {
-// 			// 		return err
-// 			// 	}
-// 			// }
-// 		}
-// 	}
-// 	return nil
-// }
-
 // get the cache accountInfo item creating it if necessary
 func (cache *Cache) get(address Address) *accountInfo {
-	if util.Contain(cache.accounts, string(address.Bytes())) {
-		return cache.accounts[string(address.Bytes())]
+	key := addressToString(address)
+	if util.Contain(cache.accounts, key) {
+		return cache.accounts[key]
 	}
 	// Then try to load from db
 	// todo: should return error?
 	account := cache.db.GetAccount(address)
 	// set the account
-	cache.accounts[string(address.Bytes())] = &accountInfo{
+	cache.accounts[key] = &accountInfo{
 		account: account,
 		storage: make(map[string][]byte),
 		removed: false,
 		updated: false,
 	}
 
-	return cache.accounts[string(address.Bytes())]
+	return cache.accounts[key]
 }
 
 func addressToString(address Address) string {
