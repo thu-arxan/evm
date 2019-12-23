@@ -44,8 +44,6 @@ type DB interface {
 // Blockchain describe what function that blockchain system shoudld provide to support the evm
 type Blockchain interface {
 	GetBlockHash(num uint64) ([]byte, error)
-	// TODO: We may need to update implementation of nonce, maybe we should add parameter like address
-	GetNonce() uint64
 	// CreateAddress will be called by CREATE Opcode
 	CreateAddress(caller Address, nonce uint64) Address
 	// Create2Address will be called by CREATE2 Opcode

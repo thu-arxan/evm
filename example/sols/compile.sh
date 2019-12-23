@@ -1,4 +1,3 @@
 # Compile sols
-solc -o output --overwrite --bin *.sol
-solc -o output --overwrite --bin-runtime *.sol
-solc -o output --overwrite --abi *.sol
+solcjs -o output --bin *.sol
+solcjs -o output --abi *.sol

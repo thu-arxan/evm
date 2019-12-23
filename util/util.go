@@ -2,6 +2,7 @@ package util
 
 import (
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"reflect"
 )
@@ -71,4 +72,9 @@ func Contain(target interface{}, obj interface{}) bool {
 	}
 
 	return false
+}
+
+// HexToBytes is the wrapper of hex.DecodeString
+func HexToBytes(s string) ([]byte, error) {
+	return hex.DecodeString(s)
 }
