@@ -58,14 +58,16 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 }
 
 // Call run code on evm
-func (evm *EVM) Call(ctx Context, code []byte, transferAble ...bool) ([]byte, error) {
-	if len(transferAble) == 0 || transferAble[0] == true {
-		if err := evm.transfer(ctx); err != nil {
-			return nil, err
-		}
+func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
+	if err := evm.transfer(ctx); err != nil {
+		return nil, err
 	}
 
-	// run code if code length is not zero
+	return evm.CallWithoutTransfer(ctx, code)
+}
+
+// CallWithoutTransfer is call without transfer
+func (evm *EVM) CallWithoutTransfer(ctx Context, code []byte) ([]byte, error) {
 	if len(code) > 0 {
 		evm.stackDepth++
 		if evm.stackDepth > 1024 {
@@ -809,7 +811,11 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			}
 
 			var callErr error
-			returnData, callErr = evm.Call(calleeCtx, acc.GetCode(), transferAble)
+			if !transferAble {
+				returnData, callErr = evm.CallWithoutTransfer(calleeCtx, acc.GetCode())
+			} else {
+				returnData, callErr = evm.Call(calleeCtx, acc.GetCode())
+			}
 
 			if callErr == nil {
 				// Sync error is a hard stop
