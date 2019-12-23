@@ -25,6 +25,7 @@ type EVM struct {
 	bc             Blockchain
 	db             DB
 	memoryProvider func(errorSink errors.Sink) Memory
+	stackDepth     uint64
 }
 
 // New is the constructor of EVM
@@ -57,7 +58,6 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 }
 
 // Call run code on evm
-// TODO: Should we record call times to avoid keep calling
 func (evm *EVM) Call(ctx Context, code []byte, transferAble ...bool) ([]byte, error) {
 	if len(transferAble) == 0 || transferAble[0] == true {
 		if err := evm.transfer(ctx); err != nil {
@@ -67,7 +67,13 @@ func (evm *EVM) Call(ctx Context, code []byte, transferAble ...bool) ([]byte, er
 
 	// run code if code length is not zero
 	if len(code) > 0 {
-		return evm.call(ctx, code)
+		evm.stackDepth++
+		if evm.stackDepth > 1024 {
+			return nil, errors.CallStackOverflow
+		}
+		output, err := evm.call(ctx, code)
+		evm.stackDepth--
+		return output, err
 	}
 
 	return nil, nil
