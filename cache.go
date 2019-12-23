@@ -6,10 +6,9 @@ import (
 	"fmt"
 )
 
-// Cache cache on a statedb.
+// Cache cache on a DB.
 // It will simulate operate on a db, and sync to db if necessary.
-// Note: It's not thread safety because now it will only be used in one
-// thread.
+// Note: It's not thread safety because now it will only be used in one thread.
 type Cache struct {
 	db       DB
 	accounts map[string]*accountInfo
@@ -39,20 +38,13 @@ func (cache *Cache) Exist(addr Address) bool {
 }
 
 // GetAccount return the account of address
-func (cache *Cache) GetAccount(addr Address) (Account, error) {
-	accountInfo, err := cache.get(addr)
-	if err != nil {
-		return nil, err
-	}
-	return accountInfo.account, nil
+func (cache *Cache) GetAccount(addr Address) Account {
+	return cache.get(addr).account
 }
 
 // SetAccount set account
 func (cache *Cache) SetAccount(account Account) error {
-	accInfo, err := cache.get(account.GetAddress())
-	if err != nil {
-		return err
-	}
+	accInfo := cache.get(account.GetAddress())
 	if accInfo.removed {
 		return fmt.Errorf("UpdateAccount on a removed account: %s", account.GetAddress())
 	}
@@ -63,10 +55,7 @@ func (cache *Cache) SetAccount(account Account) error {
 
 // RemoveAccount remove an account
 func (cache *Cache) RemoveAccount(address Address) error {
-	accInfo, err := cache.get(address)
-	if err != nil {
-		return err
-	}
+	accInfo := cache.get(address)
 	if accInfo.removed {
 		return fmt.Errorf("RemoveAccount on a removed account: %s", address)
 	}
@@ -77,10 +66,7 @@ func (cache *Cache) RemoveAccount(address Address) error {
 // GetStorage returns the key of an address if exist, else returns an error
 func (cache *Cache) GetStorage(address Address, key core.Word256) ([]byte, error) {
 	// fmt.Printf("GetStorage of address %s and key %b\n", address.String(), key)
-	accInfo, err := cache.get(address)
-	if err != nil {
-		return core.Zero256.Bytes(), err
-	}
+	accInfo := cache.get(address)
 
 	if util.Contain(accInfo.storage, word256ToString(key)) {
 		return accInfo.storage[word256ToString(key)], nil
@@ -97,10 +83,7 @@ func (cache *Cache) GetStorage(address Address, key core.Word256) ([]byte, error
 // NOTE: Set value to zero to remove. How should i understand this?
 func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) error {
 	// fmt.Printf("!!!Set storage %s at key %b and value is %b\n", address.String(), key, value)
-	accInfo, err := cache.get(address)
-	if err != nil {
-		return err
-	}
+	accInfo := cache.get(address)
 	if accInfo.removed {
 		return fmt.Errorf("SetStorage on a removed account: %s", string(address.Bytes()))
 	}
@@ -138,9 +121,9 @@ func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) 
 // }
 
 // get the cache accountInfo item creating it if necessary
-func (cache *Cache) get(address Address) (*accountInfo, error) {
+func (cache *Cache) get(address Address) *accountInfo {
 	if util.Contain(cache.accounts, string(address.Bytes())) {
-		return cache.accounts[string(address.Bytes())], nil
+		return cache.accounts[string(address.Bytes())]
 	}
 	// Then try to load from db
 	// todo: should return error?
@@ -153,7 +136,7 @@ func (cache *Cache) get(address Address) (*accountInfo, error) {
 		updated: false,
 	}
 
-	return cache.accounts[string(address.Bytes())], nil
+	return cache.accounts[string(address.Bytes())]
 }
 
 func addressToString(address Address) string {
