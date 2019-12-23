@@ -14,4 +14,6 @@ type Context struct {
 	Difficulty  uint64
 	GasLimit    uint64
 	CoinBase    []byte
+
+	nonTransfer bool
 }

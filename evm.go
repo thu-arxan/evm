@@ -58,9 +58,11 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 
 // Call run code on evm
 // TODO: Should we record call times to avoid keep calling
-func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
-	if err := evm.transfer(ctx); err != nil {
-		return nil, err
+func (evm *EVM) Call(ctx Context, code []byte, transferAble ...bool) ([]byte, error) {
+	if len(transferAble) == 0 || transferAble[0] == true {
+		if err := evm.transfer(ctx); err != nil {
+			return nil, err
+		}
 	}
 
 	// run code if code length is not zero
@@ -637,7 +639,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
-			// todo: need review
 			returnData = nil
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -713,8 +714,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			// acc may not exist yet. This is an errors.CodedError for
 			// CALLCODE, but not for CALL, though I don't think
 			// ethereum actually cares
-			acc := evm.getAccount(maybe, target)
-			if acc == nil {
+			if !evm.db.Exist(target) {
 				if op != CALL {
 					maybe.PushError(errors.UnknownAddress)
 					continue
@@ -724,9 +724,8 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 					maybe.PushError(err)
 					continue
 				}
-				acc = evm.getAccount(maybe, target)
 			}
-
+			acc := evm.getAccount(maybe, target)
 			// Establish a stack frame and perform the call
 			// todo: we may need cache to support this
 
@@ -739,7 +738,6 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			*ctx.Gas -= gasLimit
 
 			// Setup callee ctx for call type
-
 			calleeCtx := Context{
 				Origin: ctx.Origin,
 				Input:  memory.Read(inOffset, inSize),
@@ -747,6 +745,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				Gas:    &gasLimit,
 			}
 
+			var transferAble = true
 			// Set up the caller/callee context
 			switch op {
 			case CALL:
@@ -770,6 +769,8 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				// calleectx.CallType = exec.CallTypeStatic
 				calleeCtx.Caller = ctx.Callee
 				calleeCtx.Callee = target
+				transferAble = false
+				// todo: support read only operation
 
 				// childState.CallFrame.ReadOnly()
 				// childState.EventSink = exec.NewLogFreeEventSink(childState.EventSink)
@@ -795,13 +796,14 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				// calleectx.CallType = exec.CallTypeDelegate
 				calleeCtx.Caller = ctx.Caller
 				calleeCtx.Callee = ctx.Callee
+				transferAble = false
 
 			default:
 				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
 			}
 
 			var callErr error
-			returnData, callErr = evm.Call(calleeCtx, acc.GetCode())
+			returnData, callErr = evm.Call(calleeCtx, acc.GetCode(), transferAble)
 
 			if callErr == nil {
 				// Sync error is a hard stop
@@ -814,9 +816,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 				// So we can return nested errors.CodedError if the top level return is an errors.CodedError
 				stack.Push(core.Zero256)
 
-				// if errors.GetCode(callErr) == errors.Codes.ExecutionReverted {
-				// 	memory.Write(retOffset, RightPadBytes(returnData, int(retSize)))
-				// }
+				// todo: maybe wrong to compare two errors?
 				if callErr == errors.ExecutionReverted {
 					memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
 				}
