@@ -65,11 +65,3 @@ func (account emptyAccount) GetCode() []byte                 { return nil }
 func (account emptyAccount) GetCodeHash() []byte             { return nil }
 func (account emptyAccount) SubBalance(balance uint64) error { return nil }
 func (account emptyAccount) AddBalance(balance uint64) error { return nil }
-
-// todo: implement right
-func bytesToWord256(bytes []byte) core.Word256 {
-	if len(bytes) <= 32 {
-		return core.LeftPadWord256(bytes)
-	}
-	return core.RightPadWord256(bytes)
-}

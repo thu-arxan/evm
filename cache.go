@@ -137,6 +137,5 @@ func word256ToString(word core.Word256) string {
 }
 
 func stringToWord256(s string) core.Word256 {
-	word, _ := core.BytesToWord256([]byte(s))
-	return word
+	return core.BytesToWord256([]byte(s))
 }

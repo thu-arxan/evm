@@ -67,7 +67,7 @@ func (st *Stack) PushBytes(bz []byte) {
 
 // PushAddress push address into stack
 func (st *Stack) PushAddress(address Address) {
-	st.Push(bytesToWord256(address.Bytes()))
+	st.Push(core.BytesToWord256(address.Bytes()))
 }
 
 // PushUint64 push uint64 into stack
