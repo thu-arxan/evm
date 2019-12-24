@@ -3,13 +3,12 @@ package main
 import (
 	"evm"
 	"evm/example"
-	"evm/util"
+	eutil "evm/example/util"
 	"fmt"
-	"io/ioutil"
 )
 
 func main() {
-	code, err := readBinCode("../sols/output/Balance_sol_Balance.bin")
+	code, err := eutil.ReadBinFile("../sols/output/Balance_sol_Balance.bin")
 	if err != nil {
 		panic(err)
 	}
@@ -28,13 +27,4 @@ func main() {
 		panic(err)
 	}
 	fmt.Printf("%x\n", code)
-}
-
-func readBinCode(filePath string) ([]byte, error) {
-	data, err := ioutil.ReadFile(filePath)
-	if err != nil {
-		return nil, err
-	}
-	// fmt.Println(string(data))
-	return util.HexToBytes(string(data))
 }

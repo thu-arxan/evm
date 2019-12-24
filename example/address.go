@@ -3,7 +3,7 @@ package example
 import "evm/util"
 
 // Address is the address
-type Address [32]byte
+type Address [20]byte
 
 // Bytes is the implementation of interface
 func (a *Address) Bytes() []byte {
