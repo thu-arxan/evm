@@ -1,6 +1,7 @@
 package util
 
 import (
+	"bytes"
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
@@ -86,4 +87,9 @@ func RandNum(max int) int {
 	rand.Seed(time.Now().UnixNano())
 	randNum := rand.Intn(max)
 	return randNum
+}
+
+// BytesCombine combines some bytes
+func BytesCombine(pBytes ...[]byte) []byte {
+	return bytes.Join(pBytes, []byte(""))
 }

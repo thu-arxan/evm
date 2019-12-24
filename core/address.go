@@ -22,7 +22,7 @@ func (address Address) Word256() Word256 {
 	return Word160(address).Word256()
 }
 
-// Bytes return bytes of address
+// Bytes return bytes of address, which length is 20
 func (address Address) Bytes() []byte {
 	return Word160(address).Bytes()
 }
@@ -31,6 +31,8 @@ func (address Address) Bytes() []byte {
 func AddressFromBytes(bs []byte) (address Address) {
 	if len(bs) > Word160Length {
 		bs = bs[len(bs)-Word160Length:]
+	} else if len(bs) < Word160Length {
+		bs = util.BytesCombine(make([]byte, Word160Length-len(bs)), bs)
 	}
 	copy(address[:], bs)
 	return
