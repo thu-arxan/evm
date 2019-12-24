@@ -128,7 +128,7 @@ func addressToString(address Address) string {
 }
 
 func stringToAddress(s string) Address {
-	addr, _ := core.AddressFromBytes([]byte(s))
+	addr := core.AddressFromBytes([]byte(s))
 	return addr
 }
 

@@ -44,8 +44,11 @@ func New(bc Blockchain, db DB) *EVM {
 // Create create a contract account, and return an error if there exist a contract on the address
 func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 	log.Debug("Create here")
-	// todo: we may support nil if the user do not want to implementation it
 	address := evm.bc.CreateAddress(ctx.Caller, evm.cache.GetNonce(ctx.Caller))
+	// Call default implementaion if the user do no want to implement it
+	if address == nil {
+		address = defaultCreateAddress(ctx.Caller, evm.cache.GetNonce(ctx.Caller), evm.bc.BytesToAddress)
+	}
 	log.Debug("Create address succeed")
 	if err := evm.createAccount(ctx.Caller, address); err != nil {
 		return nil, address, err
@@ -669,6 +672,9 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			var newAccountAddress Address
 			if op == CREATE {
 				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.cache.GetNonce(ctx.Callee))
+				if newAccountAddress == nil {
+					newAccountAddress = defaultCreateAddress(ctx.Caller, evm.cache.GetNonce(ctx.Caller), evm.bc.BytesToAddress)
+				}
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.getAccount(maybe, ctx.Callee).GetCode()

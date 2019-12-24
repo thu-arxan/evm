@@ -21,7 +21,7 @@ func main() {
 		Origin: origin,
 		Caller: origin,
 		Callee: example.ZeroAddress(),
-		Value:  10,
+		Value:  0,
 		Gas:    &gas,
 	}, code)
 	if err != nil {
