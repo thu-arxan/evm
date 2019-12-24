@@ -13,7 +13,13 @@ var Zero160 = Word160{}
 type Word160 [Word160Length]byte
 
 // Word256 convert Word160 to Word256
+// The function will add zeros before Word160 until its length == 32
 func (w Word160) Word256() (word256 Word256) {
 	copy(word256[Word256Word160Delta:], w[:])
 	return
+}
+
+// Bytes return bytes of Word160
+func (w Word160) Bytes() []byte {
+	return w[:]
 }

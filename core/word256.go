@@ -36,7 +36,6 @@ func (w Word256) HexString() string {
 }
 
 // Copy copy the word256
-// TODO: really???
 func (w Word256) Copy() Word256 {
 	return w
 }
@@ -46,13 +45,15 @@ func (w Word256) Bytes() []byte {
 	return w[:]
 }
 
-// Word160 get a Word160 embedded a Word256 and padded on the left (as it is for account addresses in EVM)
+// Word160 get a Word160 embedded a Word256
+// It will remove left zeros until length == 20
 func (w Word256) Word160() (w160 Word160) {
 	copy(w160[:], w[Word256Word160Delta:])
 	return
 }
 
 // Address convert Word256 to Address
+// It is a wrapper of Word160(which is same as EVM)
 func (w Word256) Address() Address {
 	return Address(w.Word160())
 }
