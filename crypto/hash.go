@@ -7,9 +7,11 @@ import (
 )
 
 // Keccak256 use sha3 to hash data
-func Keccak256(data []byte) []byte {
+func Keccak256(data ...[]byte) []byte {
 	hash := sha3.NewLegacyKeccak256()
-	hash.Write(data)
+	for _, value := range data {
+		hash.Write(value)
+	}
 	return hash.Sum(nil)
 }
 

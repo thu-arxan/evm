@@ -673,12 +673,15 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 			if op == CREATE {
 				newAccountAddress = evm.bc.CreateAddress(ctx.Callee, evm.cache.GetNonce(ctx.Callee))
 				if newAccountAddress == nil {
-					newAccountAddress = defaultCreateAddress(ctx.Caller, evm.cache.GetNonce(ctx.Caller), evm.bc.BytesToAddress)
+					newAccountAddress = defaultCreateAddress(ctx.Callee, evm.cache.GetNonce(ctx.Callee), evm.bc.BytesToAddress)
 				}
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.getAccount(maybe, ctx.Callee).GetCode()
 				newAccountAddress = evm.bc.Create2Address(ctx.Callee, salt.Bytes(), code)
+				if newAccountAddress == nil {
+					newAccountAddress = defaultCreate2Address(ctx.Callee, salt.Bytes(), code, evm.bc.BytesToAddress)
+				}
 			}
 
 			if evm.cache.Exist(newAccountAddress) {
