@@ -13,25 +13,27 @@ func NewBlockchain() *Blockchain {
 
 // GetBlockHash is the implementation of interface
 func (bc *Blockchain) GetBlockHash(num uint64) ([]byte, error) {
-	return nil, nil
+	var hash = make([]byte, 32)
+	return hash, nil
 }
 
 // CreateAddress is the implementation of interface
 func (bc *Blockchain) CreateAddress(caller evm.Address, nonce uint64) evm.Address {
-	return nil
+	return RandomAddress()
 }
 
 // Create2Address is the implementation of interface
 func (bc *Blockchain) Create2Address(caller evm.Address, salt, code []byte) evm.Address {
-	return nil
+	return RandomAddress()
 }
 
 // NewAccount is the implementation of interface
 func (bc *Blockchain) NewAccount(address evm.Address) evm.Account {
-	return nil
+	addr := address.(*Address)
+	return NewAccount(addr)
 }
 
 // BytesToAddress is the implementation of interface
 func (bc *Blockchain) BytesToAddress(bytes []byte) evm.Address {
-	return nil
+	return BytesToAddress(bytes)
 }

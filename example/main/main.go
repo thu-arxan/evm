@@ -14,7 +14,20 @@ func main() {
 		panic(err)
 	}
 	vm := evm.New(example.NewBlockchain(), example.NewMemoryDB())
-	vm.Create(evm.Context{}, code)
+	var gas uint64
+	gas = 10000000
+	var origin = example.RandomAddress()
+	code, err = vm.Call(evm.Context{
+		Origin: origin,
+		Caller: origin,
+		Callee: example.ZeroAddress(),
+		Value:  10,
+		Gas:    &gas,
+	}, code)
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("%x\n", code)
 }
 
 func readBinCode(filePath string) ([]byte, error) {
@@ -22,6 +35,6 @@ func readBinCode(filePath string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(string(data))
+	// fmt.Println(string(data))
 	return util.HexToBytes(string(data))
 }

@@ -20,6 +20,10 @@ const (
 	DefaultMaxStackCapacity uint64 = 32 * 1024
 )
 
+func init() {
+	log.SetLevel(log.DEBUG)
+}
+
 // EVM is the evm
 type EVM struct {
 	bc             Blockchain
@@ -39,12 +43,15 @@ func New(bc Blockchain, db DB) *EVM {
 
 // Create create a contract account, and return an error if there exist a contract on the address
 func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
+	log.Debug("Create here")
 	// todo: we may support nil if the user do not want to implementation it
 	address := evm.bc.CreateAddress(ctx.Caller, evm.cache.GetNonce(ctx.Caller))
+	log.Debug("Create address succeed")
 	if err := evm.createAccount(ctx.Caller, address); err != nil {
 		return nil, address, err
 	}
 
+	log.Debug("Call here")
 	// Run the contract bytes and return the runtime bytes
 	output, err := evm.Call(ctx, code)
 	if err != nil {
@@ -63,6 +70,8 @@ func (evm *EVM) Call(ctx Context, code []byte) ([]byte, error) {
 		return nil, err
 	}
 
+	log.Debug("Call without transfer after transfer")
+
 	return evm.CallWithoutTransfer(ctx, code)
 }
 
@@ -73,6 +82,7 @@ func (evm *EVM) CallWithoutTransfer(ctx Context, code []byte) ([]byte, error) {
 		if evm.stackDepth > 1024 {
 			return nil, errors.CallStackOverflow
 		}
+		log.Debug("Begin evm call")
 		output, err := evm.call(ctx, code)
 		evm.stackDepth--
 		return output, err
@@ -109,6 +119,7 @@ func (evm *EVM) call(ctx Context, code []byte) ([]byte, error) {
 
 	var returnData []byte
 
+	log.Debug("For loop...")
 	for {
 		if maybe.Error() != nil {
 			return nil, maybe.Error()

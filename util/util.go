@@ -4,7 +4,9 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
 	"reflect"
+	"time"
 )
 
 // SubSlice returns a subslice from offset of length length and a bool
@@ -77,4 +79,11 @@ func Contain(target interface{}, obj interface{}) bool {
 // HexToBytes is the wrapper of hex.DecodeString
 func HexToBytes(s string) ([]byte, error) {
 	return hex.DecodeString(s)
+}
+
+// RandNum return int in [0, max)
+func RandNum(max int) int {
+	rand.Seed(time.Now().UnixNano())
+	randNum := rand.Intn(max)
+	return randNum
 }
