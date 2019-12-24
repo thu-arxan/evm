@@ -80,8 +80,8 @@ func (cache *Cache) GetStorage(address Address, key core.Word256) ([]byte, error
 
 // SetStorage set the storage of address
 // NOTE: Set value to zero to remove. How should i understand this?
+// TODO: Review this
 func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) error {
-	// fmt.Printf("!!!Set storage %s at key %b and value is %b\n", address.String(), key, value)
 	accInfo := cache.get(address)
 	if accInfo.removed {
 		return fmt.Errorf("SetStorage on a removed account: %s", addressToString(address))
