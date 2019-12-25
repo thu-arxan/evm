@@ -3,7 +3,9 @@ package abi
 import (
 	"encoding/binary"
 	"encoding/json"
+	"evm"
 	"evm/crypto"
+	"evm/util"
 	"fmt"
 	"io/ioutil"
 	"math/big"
@@ -12,8 +14,6 @@ import (
 	"strconv"
 	"strings"
 	"unsafe" // just for Sizeof
-
-	"madledger/common"
 )
 
 // ElementSize is 32 because the evm is a stack on 256 bits, which means 32 bytes
@@ -472,7 +472,7 @@ type EVMAddress struct {
 }
 
 func (e EVMAddress) getGoType() interface{} {
-	return new(common.Address)
+	return new(evm.Address)
 }
 
 // GetSignature is the implementation of EVMType
@@ -482,42 +482,28 @@ func (e EVMAddress) GetSignature() string {
 
 func (e EVMAddress) pack(v interface{}) ([]byte, error) {
 	var err error
-	a, ok := v.(common.Address)
-	if !ok {
-		s, ok := v.(string)
-		if ok {
-			a, err = common.AddressFromHexString(s)
-			if err != nil {
-				return nil, err
-			}
-		}
-	} else {
-		b, ok := v.([]byte)
-		if !ok {
-			return nil, fmt.Errorf("cannot map to %s to EVM address", reflect.ValueOf(v).Kind().String())
-		}
-
-		a, err = common.AddressFromBytes(b)
+	var bytes []byte
+	if s, ok := v.(string); ok {
+		bytes, err = util.HexToBytes(s)
 		if err != nil {
 			return nil, err
 		}
+	} else if b, ok := v.([]byte); ok {
+		bytes = b
+	} else {
+		return nil, fmt.Errorf("cannot map to %s to EVM address", reflect.ValueOf(v).Kind().String())
 	}
 
-	return pad(a[:], ElementSize, true), nil
+	return pad(bytes, ElementSize, true), nil
 }
 
 func (e EVMAddress) unpack(data []byte, offset int, v interface{}) (int, error) {
-	addr, err := common.AddressFromBytes(data[offset+ElementSize-common.AddressLength : offset+ElementSize])
-	if err != nil {
-		return 0, err
-	}
+	value := data[offset+ElementSize-20 : offset+ElementSize]
 	switch v := v.(type) {
 	case *string:
-		*v = addr.String()
-	case *common.Address:
-		*v = addr
+		*v = util.Hex(data)
 	case *([]byte):
-		*v = data[offset+ElementSize-common.AddressLength : offset+ElementSize]
+		*v = value
 	default:
 		return 0, fmt.Errorf("cannot map EVM address to %s", reflect.ValueOf(v).Kind().String())
 	}
@@ -920,9 +906,7 @@ func ReadAbiSpecFile(filename string) (*Spec, error) {
 func EVMTypeFromReflect(v reflect.Type) Argument {
 	arg := Argument{Name: v.Name()}
 
-	if v == reflect.TypeOf(common.Address{}) {
-		arg.EVM = EVMAddress{}
-	} else if v == reflect.TypeOf(big.Int{}) {
+	if v == reflect.TypeOf(big.Int{}) {
 		arg.EVM = EVMInt{M: 256}
 	} else {
 		if v.Kind() == reflect.Array {
@@ -944,7 +928,9 @@ func EVMTypeFromReflect(v reflect.Type) Argument {
 		case reflect.Int64:
 			arg.EVM = EVMInt{M: 64}
 		default:
-			panic(fmt.Sprintf("no mapping for type %v", v.Kind()))
+			// todo: can we do this?
+			arg.EVM = EVMAddress{}
+			// panic(fmt.Sprintf("no mapping for type %v", v.Kind()))
 		}
 	}
 
