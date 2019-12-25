@@ -44,6 +44,9 @@ func New(bc Blockchain, db DB) *EVM {
 
 // Create create a contract account, and return an error if there exist a contract on the address
 func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
+	if evm.origin == nil {
+		evm.origin = caller
+	}
 	if len(ctx.Input) == 0 {
 		return nil, nil, errors.InvalidContractCode
 	}
@@ -60,7 +63,7 @@ func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
 	account := evm.cache.GetAccount(address)
 	account.SetNonce(account.GetNonce() + 1)
 	// transfer and run
-	if err := evm.transfer(ctx, caller, address); err != nil {
+	if err := evm.transfer(caller, address, ctx.Value); err != nil {
 		return nil, nil, err
 	}
 	code, err := evm.callWithDepth(ctx, caller, address, ctx.Input)
@@ -81,7 +84,10 @@ func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
 
 // Call run code on evm, and it will sync change to db if error is nil
 func (evm *EVM) Call(ctx Context, caller, callee Address, code []byte) ([]byte, error) {
-	if err := evm.transfer(ctx, caller, callee); err != nil {
+	if evm.origin == nil {
+		evm.origin = caller
+	}
+	if err := evm.transfer(caller, callee, ctx.Value); err != nil {
 		return nil, err
 	}
 
@@ -90,6 +96,9 @@ func (evm *EVM) Call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 
 // CallWithoutTransfer is call without transfer, and it will sync change to db if error is nil
 func (evm *EVM) CallWithoutTransfer(ctx Context, caller, callee Address, code []byte) (output []byte, err error) {
+	if evm.origin == nil {
+		evm.origin = caller
+	}
 	output, err = evm.callWithDepth(ctx, caller, callee, code)
 	if err != nil {
 		return
@@ -99,18 +108,18 @@ func (evm *EVM) CallWithoutTransfer(ctx Context, caller, callee Address, code []
 	return
 }
 
-func (evm *EVM) transfer(ctx Context, caller, callee Address) error {
-	if ctx.Value == 0 {
+func (evm *EVM) transfer(caller, callee Address, value uint64) error {
+	if value == 0 {
 		return nil
 	}
 
 	from := evm.cache.GetAccount(caller)
-	if err := from.SubBalance(ctx.Value); err != nil {
+	if err := from.SubBalance(value); err != nil {
 		return err
 	}
 
 	to := evm.cache.GetAccount(callee)
-	if err := to.AddBalance(ctx.Value); err != nil {
+	if err := to.AddBalance(value); err != nil {
 		return err
 	}
 
