@@ -18,7 +18,7 @@ func main() {
 	var gas uint64
 	gas = 10000000
 	var origin = example.RandomAddress()
-	code, err = vm.Call(evm.Context{
+	code, _, err = vm.Create(evm.Context{
 		Origin: origin,
 		Caller: origin,
 		Callee: example.ZeroAddress(),

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"math/rand"
 	"reflect"
+	"strings"
 	"time"
 )
 
@@ -77,8 +78,13 @@ func Contain(target interface{}, obj interface{}) bool {
 	return false
 }
 
-// HexToBytes is the wrapper of hex.DecodeString
+// HexToBytes will remove 0x or 0X of begin ,and then call hex.DecodeString
 func HexToBytes(s string) ([]byte, error) {
+	if strings.HasPrefix(s, "0x") {
+		s = strings.Replace(s, "0x", "", 1)
+	} else if strings.HasPrefix(s, "0X") {
+		s = strings.Replace(s, "0X", "", 1)
+	}
 	return hex.DecodeString(s)
 }
 
@@ -92,4 +98,16 @@ func RandNum(max int) int {
 // BytesCombine combines some bytes
 func BytesCombine(pBytes ...[]byte) []byte {
 	return bytes.Join(pBytes, []byte(""))
+}
+
+// FixBytesLength fix bytes to bytes which length is length
+func FixBytesLength(bytes []byte, length int) []byte {
+	var result = make([]byte, length)
+	if len(bytes) > length {
+		bytes = bytes[len(bytes)-length:]
+	} else if len(bytes) < length {
+		bytes = BytesCombine(make([]byte, length-len(bytes)), bytes)
+	}
+	copy(result[:], bytes)
+	return result
 }

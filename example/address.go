@@ -13,7 +13,16 @@ func (a *Address) Bytes() []byte {
 // BytesToAddress convert bytes to address
 func BytesToAddress(bytes []byte) *Address {
 	var a Address
-	copy(a[:], bytes)
+	copy(a[:], util.FixBytesLength(bytes, 20))
+	return &a
+}
+
+// HexToAddress convert hex string to address, string may begin with 0x, 0X or nothing
+func HexToAddress(hex string) *Address {
+	var a Address
+	if bytes, err := util.HexToBytes(hex); err == nil {
+		copy(a[:], util.FixBytesLength(bytes, 20))
+	}
 	return &a
 }
 

@@ -19,12 +19,12 @@ func (bc *Blockchain) GetBlockHash(num uint64) ([]byte, error) {
 
 // CreateAddress is the implementation of interface
 func (bc *Blockchain) CreateAddress(caller evm.Address, nonce uint64) evm.Address {
-	return RandomAddress()
+	return nil
 }
 
 // Create2Address is the implementation of interface
 func (bc *Blockchain) Create2Address(caller evm.Address, salt, code []byte) evm.Address {
-	return RandomAddress()
+	return nil
 }
 
 // NewAccount is the implementation of interface

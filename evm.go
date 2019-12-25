@@ -61,7 +61,7 @@ func (evm *EVM) Create(ctx Context, code []byte) ([]byte, Address, error) {
 	account := evm.cache.GetAccount(address)
 	account.SetCode(output)
 
-	return nil, address, evm.cache.UpdateAccount(account)
+	return output, address, evm.cache.UpdateAccount(account)
 }
 
 // Call run code on evm
