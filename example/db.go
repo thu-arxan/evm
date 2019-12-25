@@ -44,11 +44,6 @@ func (db *MemoryDB) RemoveAccount(address evm.Address) error {
 	return nil
 }
 
-// GetNonce is the implementation of interface
-func (db *MemoryDB) GetNonce(address evm.Address) uint64 {
-	return 0
-}
-
 // AddLog is the implementation of interface
 func (db *MemoryDB) AddLog(log *evm.Log) {
 

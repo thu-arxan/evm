@@ -61,3 +61,13 @@ func (a *Account) SubBalance(balance uint64) error {
 	a.balance -= balance
 	return nil
 }
+
+// GetNonce is the implementation of interface
+func (a *Account) GetNonce() uint64 {
+	return a.nonce
+}
+
+// SetNonce is the implementation of interface
+func (a *Account) SetNonce(nonce uint64) {
+	a.nonce = nonce
+}

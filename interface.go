@@ -6,14 +6,16 @@ import "evm/core"
 
 // Account describe what function that account should provide
 type Account interface {
-	SetCode(code []byte)
 	GetAddress() Address
 	GetBalance() uint64
-	GetCode() []byte
-	// GetCodeHash return the hash of account code, please return [32]byte, and return [32]byte{0, ..., 0} if code is empty
-	GetCodeHash() []byte
 	AddBalance(balance uint64) error
 	SubBalance(balance uint64) error
+	GetCode() []byte
+	SetCode(code []byte)
+	// GetCodeHash return the hash of account code, please return [32]byte, and return [32]byte{0, ..., 0} if code is empty
+	GetCodeHash() []byte
+	GetNonce() uint64
+	SetNonce(nonce uint64)
 }
 
 // Address describe what functions that an Address implementation should provide
@@ -37,7 +39,6 @@ type DB interface {
 	UpdateAccount(account Account) error
 	// Remove the account at address
 	RemoveAccount(address Address) error
-	GetNonce(address Address) uint64
 	AddLog(log *Log)
 }
 

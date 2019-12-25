@@ -94,7 +94,7 @@ func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) 
 // GetNonce return the nonce of account
 // todo: implement it in the right way
 func (cache *Cache) GetNonce(address Address) uint64 {
-	return cache.db.GetNonce(address)
+	return cache.get(address).account.GetNonce()
 }
 
 // AddLog add log
