@@ -6,6 +6,7 @@ import (
 	"evm/core"
 	"evm/util"
 	"fmt"
+	"strings"
 )
 
 // Memory is a memory db
@@ -26,6 +27,7 @@ type accountInfo struct {
 func NewMemory(accountFunc func(address evm.Address) evm.Account) *Memory {
 	return &Memory{
 		accounts:    make(map[string]*accountInfo),
+		storages:    make(map[string][]byte),
 		logs:        make([]*evm.Log, 0),
 		accountFunc: accountFunc,
 	}
@@ -53,16 +55,18 @@ func (m *Memory) GetAccount(address evm.Address) evm.Account {
 // GetStorage is the implementation of interface
 func (m *Memory) GetStorage(address evm.Address, key core.Word256) (value []byte, err error) {
 	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
+	fmt.Printf("Get storage key=%x\n", []byte(storageKey))
 	if util.Contain(m.storages, storageKey) {
 		return m.storages[storageKey], nil
 	}
-	return nil, errors.New("value is not exist")
+	return nil, nil
 }
 
 // SetStorage is the implementation of interface
 func (m *Memory) SetStorage(address evm.Address, key core.Word256, value []byte) error {
 	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
 	m.storages[storageKey] = value
+	fmt.Printf("Set storage (key=%x, value=%x)\n", []byte(storageKey), value)
 	return nil
 }
 
@@ -86,6 +90,12 @@ func (m *Memory) RemoveAccount(address evm.Address) error {
 	key := string(address.Bytes())
 	if util.Contain(m.accounts, key) {
 		m.accounts[key].removed = true
+	}
+	// remove all storages
+	for storageKey := range m.storages {
+		if strings.HasPrefix(storageKey, key) {
+			delete(m.storages, storageKey)
+		}
 	}
 	return nil
 }
