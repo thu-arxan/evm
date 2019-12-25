@@ -111,3 +111,8 @@ func FixBytesLength(bytes []byte, length int) []byte {
 	copy(result[:], bytes)
 	return result
 }
+
+// Hex is the wrapper of fmt.Sprintf("%x", data)
+func Hex(data []byte) string {
+	return fmt.Sprintf("%x", data)
+}
