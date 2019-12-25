@@ -844,10 +844,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				// Storage: this contract
 				// Code: from target
 
-				// calleectx.CallType = exec.CallTypeDelegate
-				// calleeCtx.caller = caller
-				// calleeCtx.callee = callee
-				// transferAble = false
 				returnData, callErr = evm.CallWithoutTransfer(caller, callee, acc.GetCode())
 
 			default:

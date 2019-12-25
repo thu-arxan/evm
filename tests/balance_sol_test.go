@@ -12,6 +12,12 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	balanceAbi     = "sols/Balance_sol_Balance.abi"
+	balanceCode    []byte
+	balanceAddress evm.Address
+)
+
 func TestBalanceSol(t *testing.T) {
 	// first create the contract
 	binBytes, err := util.ReadBinFile("sols/Balance_sol_Balance.bin")
@@ -34,16 +40,34 @@ func TestBalanceSol(t *testing.T) {
 	account := memoryDB.GetAccount(contractAddress)
 	require.Equal(t, code, account.GetCode())
 	require.Equal(t, uint64(1), account.GetNonce())
-	// then call the contract
-	payload, err := abi.GetPayloadBytes("sols/Balance_sol_Balance.abi", "get", nil)
+	balanceAddress = contractAddress
+	balanceCode = code
+	// then call the contract with get function
+	callBalance(t, memoryDB, bc, origin, "get", nil, []string{"10"})
+	// then set value to 20
+	callBalance(t, memoryDB, bc, origin, "set", []string{"20"}, []string{"true"})
+	// then get
+	callBalance(t, memoryDB, bc, origin, "get", nil, []string{"20"})
+	// then add
+	callBalance(t, memoryDB, bc, origin, "add", []string{"10"}, []string{"30"})
+	// then get
+	callBalance(t, memoryDB, bc, origin, "get", nil, []string{"30"})
+}
+
+func callBalance(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string) {
+	payload, err := abi.GetPayloadBytes(balanceAbi, funcName, inputs)
 	require.NoError(t, err)
-	fmt.Printf("%x\n", payload)
-	vm = evm.New(bc, memoryDB, &evm.Context{
+	var gas uint64 = 10000
+	output, err := evm.New(bc, db, &evm.Context{
 		Input: payload,
 		Value: 0,
 		Gas:   &gas,
-	})
-	output, err := vm.Call(origin, contractAddress, code)
+	}).Call(caller, balanceAddress, balanceCode)
 	require.NoError(t, err)
-	fmt.Printf("%x\n", output)
+	variables, err := abi.Unpacker(balanceAbi, funcName, output)
+	require.NoError(t, err)
+	require.Len(t, variables, len(excepts))
+	for i := range excepts {
+		require.Equal(t, excepts[i], variables[i].Value)
+	}
 }
