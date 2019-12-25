@@ -2,6 +2,7 @@ package tests
 
 import (
 	"evm"
+	"evm/db"
 	"evm/example"
 	"evm/util"
 	"fmt"
@@ -13,7 +14,8 @@ import (
 func TestCreateBalanceSol(t *testing.T) {
 	code, err := util.ReadBinFile("sols/Balance_sol_Balance.bin")
 	require.NoError(t, err)
-	vm := evm.New(example.NewBlockchain(), example.NewMemoryDB())
+	bc := example.NewBlockchain()
+	vm := evm.New(bc, db.NewMemory(bc.NewAccount))
 	var gas uint64 = 10000
 	var origin = example.RandomAddress()
 	code, err = vm.Call(evm.Context{

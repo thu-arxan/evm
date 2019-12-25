@@ -2,6 +2,7 @@ package main
 
 import (
 	"evm"
+	"evm/db"
 	"evm/example"
 	"evm/util"
 	"fmt"
@@ -12,7 +13,8 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	vm := evm.New(example.NewBlockchain(), example.NewMemoryDB())
+	bc := example.NewBlockchain()
+	vm := evm.New(bc, db.NewMemory(bc.NewAccount))
 	var gas uint64
 	gas = 10000000
 	var origin = example.RandomAddress()

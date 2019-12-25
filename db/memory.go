@@ -10,14 +10,24 @@ import (
 
 // Memory is a memory db
 type Memory struct {
-	accounts map[string]evm.Account
+	accounts map[string]*accountInfo
 	storages map[string][]byte
+	logs     []*evm.Log
+
+	accountFunc func(address evm.Address) evm.Account
+}
+
+type accountInfo struct {
+	account evm.Account
+	removed bool
 }
 
 // NewMemory is the constructor of Memory
-func NewMemory() *Memory {
+func NewMemory(accountFunc func(address evm.Address) evm.Account) *Memory {
 	return &Memory{
-		accounts: make(map[string]evm.Account),
+		accounts:    make(map[string]*accountInfo),
+		logs:        make([]*evm.Log, 0),
+		accountFunc: accountFunc,
 	}
 }
 
@@ -29,8 +39,15 @@ func (m *Memory) Exist(address evm.Address) bool {
 
 // GetAccount is the implementation of interface
 func (m *Memory) GetAccount(address evm.Address) evm.Account {
-	// return &Account{}
-	return nil
+	key := string(address.Bytes())
+	if util.Contain(m.accounts, key) {
+		return m.accounts[key].account
+	}
+	account := m.accountFunc(address)
+	m.accounts[key] = &accountInfo{
+		account: account,
+	}
+	return account
 }
 
 // GetStorage is the implementation of interface
@@ -52,21 +69,28 @@ func (m *Memory) SetStorage(address evm.Address, key core.Word256, value []byte)
 // UpdateAccount is the implementation of interface
 func (m *Memory) UpdateAccount(account evm.Account) error {
 	key := string(account.GetAddress().Bytes())
-	m.accounts[key] = account
+	if util.Contain(m.accounts, key) {
+		if m.accounts[key].removed {
+			return errors.New("can not update on removed account")
+		}
+	}
+	m.accounts[key] = &accountInfo{
+		account: account,
+	}
 	return nil
 }
 
 // RemoveAccount is the implementation of interface
+// TODO: What if an acount is not exist?
 func (m *Memory) RemoveAccount(address evm.Address) error {
+	key := string(address.Bytes())
+	if util.Contain(m.accounts, key) {
+		m.accounts[key].removed = true
+	}
 	return nil
-}
-
-// GetNonce is the implementation of interface
-func (m *Memory) GetNonce(address evm.Address) uint64 {
-	return 0
 }
 
 // AddLog is the implementation of interface
 func (m *Memory) AddLog(log *evm.Log) {
-
+	m.logs = append(m.logs, log)
 }
