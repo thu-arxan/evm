@@ -1,7 +1,6 @@
 package util
 
 import (
-	"evm/util"
 	"io/ioutil"
 )
 
@@ -11,5 +10,5 @@ func ReadBinFile(path string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return util.HexToBytes(string(data))
+	return HexToBytes(string(data))
 }

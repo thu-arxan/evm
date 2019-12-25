@@ -3,12 +3,12 @@ package main
 import (
 	"evm"
 	"evm/example"
-	eutil "evm/example/util"
+	"evm/util"
 	"fmt"
 )
 
 func main() {
-	code, err := eutil.ReadBinFile("../sols/output/Balance_sol_Balance.bin")
+	code, err := util.ReadBinFile("../sols/output/Balance_sol_Balance.bin")
 	if err != nil {
 		panic(err)
 	}
