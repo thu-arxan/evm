@@ -14,17 +14,16 @@ func main() {
 		panic(err)
 	}
 	bc := example.NewBlockchain()
-	vm := evm.New(bc, db.NewMemory(bc.NewAccount))
 	var gas uint64
 	gas = 10000000
+	vm := evm.New(bc, db.NewMemory(bc.NewAccount), &evm.Context{
+		Input: code,
+		Value: 0,
+		Gas:   &gas,
+	})
+
 	var origin = example.RandomAddress()
-	code, _, err = vm.Create(evm.Context{
-		Origin: origin,
-		Caller: origin,
-		Callee: example.ZeroAddress(),
-		Value:  0,
-		Gas:    &gas,
-	}, code)
+	code, _, err = vm.Create(origin)
 	if err != nil {
 		panic(err)
 	}

@@ -55,7 +55,6 @@ func (m *Memory) GetAccount(address evm.Address) evm.Account {
 // GetStorage is the implementation of interface
 func (m *Memory) GetStorage(address evm.Address, key core.Word256) (value []byte, err error) {
 	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
-	fmt.Printf("Get storage key=%x\n", []byte(storageKey))
 	if util.Contain(m.storages, storageKey) {
 		return m.storages[storageKey], nil
 	}
@@ -66,7 +65,6 @@ func (m *Memory) GetStorage(address evm.Address, key core.Word256) (value []byte
 func (m *Memory) SetStorage(address evm.Address, key core.Word256, value []byte) error {
 	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
 	m.storages[storageKey] = value
-	fmt.Printf("Set storage (key=%x, value=%x)\n", []byte(storageKey), value)
 	return nil
 }
 

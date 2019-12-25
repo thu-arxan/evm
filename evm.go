@@ -27,6 +27,7 @@ func init() {
 // EVM is the evm
 type EVM struct {
 	origin         Address
+	ctx            *Context
 	bc             Blockchain
 	cache          *Cache
 	memoryProvider func(errorSink errors.Sink) Memory
@@ -34,20 +35,21 @@ type EVM struct {
 }
 
 // New is the constructor of EVM
-func New(bc Blockchain, db DB) *EVM {
+func New(bc Blockchain, db DB, ctx *Context) *EVM {
 	return &EVM{
 		bc:             bc,
 		cache:          NewCache(db),
 		memoryProvider: DefaultDynamicMemoryProvider,
+		ctx:            ctx,
 	}
 }
 
 // Create create a contract account, and return an error if there exist a contract on the address
-func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
+func (evm *EVM) Create(caller Address) ([]byte, Address, error) {
 	if evm.origin == nil {
 		evm.origin = caller
 	}
-	if len(ctx.Input) == 0 {
+	if len(evm.ctx.Input) == 0 {
 		return nil, nil, errors.InvalidContractCode
 	}
 	address := evm.bc.CreateAddress(caller, evm.cache.GetNonce(caller))
@@ -63,10 +65,10 @@ func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
 	account := evm.cache.GetAccount(address)
 	account.SetNonce(account.GetNonce() + 1)
 	// transfer and run
-	if err := evm.transfer(caller, address, ctx.Value); err != nil {
+	if err := evm.transfer(caller, address, evm.ctx.Value); err != nil {
 		return nil, nil, err
 	}
-	code, err := evm.callWithDepth(ctx, caller, address, ctx.Input)
+	code, err := evm.callWithDepth(caller, address, evm.ctx.Input)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -83,23 +85,23 @@ func (evm *EVM) Create(ctx Context, caller Address) ([]byte, Address, error) {
 }
 
 // Call run code on evm, and it will sync change to db if error is nil
-func (evm *EVM) Call(ctx Context, caller, callee Address, code []byte) ([]byte, error) {
+func (evm *EVM) Call(caller, callee Address, code []byte) ([]byte, error) {
 	if evm.origin == nil {
 		evm.origin = caller
 	}
-	if err := evm.transfer(caller, callee, ctx.Value); err != nil {
+	if err := evm.transfer(caller, callee, evm.ctx.Value); err != nil {
 		return nil, err
 	}
 
-	return evm.CallWithoutTransfer(ctx, caller, callee, code)
+	return evm.CallWithoutTransfer(caller, callee, code)
 }
 
 // CallWithoutTransfer is call without transfer, and it will sync change to db if error is nil
-func (evm *EVM) CallWithoutTransfer(ctx Context, caller, callee Address, code []byte) (output []byte, err error) {
+func (evm *EVM) CallWithoutTransfer(caller, callee Address, code []byte) (output []byte, err error) {
 	if evm.origin == nil {
 		evm.origin = caller
 	}
-	output, err = evm.callWithDepth(ctx, caller, callee, code)
+	output, err = evm.callWithDepth(caller, callee, code)
 	if err != nil {
 		return
 	}
@@ -126,13 +128,13 @@ func (evm *EVM) transfer(caller, callee Address, value uint64) error {
 	return nil
 }
 
-func (evm *EVM) callWithDepth(ctx Context, caller, callee Address, code []byte) ([]byte, error) {
+func (evm *EVM) callWithDepth(caller, callee Address, code []byte) ([]byte, error) {
 	if len(code) > 0 {
 		evm.stackDepth++
 		if evm.stackDepth > 1024 {
 			return nil, errors.CallStackOverflow
 		}
-		output, err := evm.call(ctx, caller, callee, code)
+		output, err := evm.call(caller, callee, code)
 		evm.stackDepth--
 		return output, err
 	}
@@ -140,9 +142,9 @@ func (evm *EVM) callWithDepth(ctx Context, caller, callee Address, code []byte) 
 }
 
 // call does not transfer 'value' or modify the callDepth.
-func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, error) {
+func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 	var maybe = errors.NewMaybe()
-
+	var ctx = evm.ctx
 	var pc uint64
 	var stack = NewStack(DefaultStackCapacity, DefaultMaxStackCapacity, ctx.Gas, maybe, evm.bc.BytesToAddress)
 	var memory = evm.memoryProvider(maybe)
@@ -720,11 +722,14 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 
 			// Run the input to get the contract code.
 			// NOTE: no need to copy 'input' as per Call contract.
-			ret, callErr := evm.Call(Context{
-				Input: input,
-				Value: contractValue,
-				Gas:   ctx.Gas,
-			}, callee, newAccountAddress, code)
+			// record old ctx
+			prevInput := ctx.Input
+			prevValue := ctx.Value
+			ctx.Input = input
+			ctx.Value = contractValue
+			ret, callErr := evm.Call(callee, newAccountAddress, code)
+			ctx.Input = prevInput
+			ctx.Value = prevValue
 			if callErr != nil {
 				stack.Push(core.Zero256)
 				// Note we both set the return buffer and return the result normally in order to service the error to
@@ -789,12 +794,14 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 			// NOTE: we will return any used gas later.
 			*ctx.Gas -= gasLimit
 
-			// Setup callee ctx for call type
-			calleeCtx := Context{
-				Input: memory.Read(inOffset, inSize),
-				Value: value,
-				Gas:   &gasLimit,
-			}
+			// store prev ctx
+			prevInput := evm.ctx.Input
+			prevValue := evm.ctx.Value
+			prevGas := evm.ctx.Gas
+			// update ctx
+			ctx.Input = memory.Read(inOffset, inSize)
+			ctx.Value = value
+			ctx.Gas = &gasLimit
 
 			var callErr error
 			// Set up the caller/callee context
@@ -805,7 +812,7 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 				// Caller: this contract
 				// Storage: target
 				// Code: from target
-				returnData, callErr = evm.Call(calleeCtx, callee, target, acc.GetCode())
+				returnData, callErr = evm.Call(callee, target, acc.GetCode())
 
 			case STATICCALL:
 				// Calls contract at target from this contract with no state mutation
@@ -815,7 +822,7 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 				// Code: from target
 
 				// calleectx.CallType = exec.CallTypeStatic
-				returnData, callErr = evm.CallWithoutTransfer(calleeCtx, callee, target, acc.GetCode())
+				returnData, callErr = evm.CallWithoutTransfer(callee, target, acc.GetCode())
 				// todo: support read only operation
 
 				// childState.CallFrame.ReadOnly()
@@ -828,7 +835,7 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 				// Storage: this contract
 				// Code: from target
 
-				returnData, callErr = evm.Call(calleeCtx, callee, callee, acc.GetCode())
+				returnData, callErr = evm.Call(callee, callee, acc.GetCode())
 
 			case DELEGATECALL:
 				// Calling this contract from the original caller as if it had the code at target
@@ -841,11 +848,15 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 				// calleeCtx.caller = caller
 				// calleeCtx.callee = callee
 				// transferAble = false
-				returnData, callErr = evm.CallWithoutTransfer(calleeCtx, caller, callee, acc.GetCode())
+				returnData, callErr = evm.CallWithoutTransfer(caller, callee, acc.GetCode())
 
 			default:
 				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
 			}
+			// recover ctx
+			ctx.Input = prevInput
+			ctx.Value = prevValue
+			ctx.Gas = prevGas
 
 			if callErr == nil {
 				// Sync error is a hard stop
@@ -872,7 +883,7 @@ func (evm *EVM) call(ctx Context, caller, callee Address, code []byte) ([]byte, 
 			}
 
 			// Handle remaining gas.
-			*ctx.Gas += *calleeCtx.Gas
+			*ctx.Gas += gasLimit
 
 			log.Debugf("resume %s (%v)\n", callee, ctx.Gas)
 
