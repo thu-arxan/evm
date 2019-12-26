@@ -59,7 +59,6 @@ const (
 	EXTCODECOPY
 	RETURNDATASIZE
 	RETURNDATACOPY
-	// Note: This is new
 	EXTCODEHASH
 )
 
