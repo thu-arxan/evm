@@ -33,7 +33,7 @@ type DB interface {
 	Exist(address Address) bool
 	// GetStorage return a default account if unexist
 	GetAccount(address Address) Account
-	// GetStorage return an error if key of address is not exist
+	// Note: GetStorage return nil if key is not exist(with no error)
 	GetStorage(address Address, key core.Word256) (value []byte, err error)
 	SetStorage(address Address, key core.Word256, value []byte) error
 	UpdateAccount(account Account) error
