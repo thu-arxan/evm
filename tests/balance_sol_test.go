@@ -54,6 +54,13 @@ func TestBalanceSol(t *testing.T) {
 	callBalance(t, memoryDB, bc, origin, "get", nil, []string{"30"})
 	// info
 	callBalance(t, memoryDB, bc, origin, "info", nil, []string{"6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"})
+	// define temporary address for testing
+	var temporarySender = RandomAddress()
+	var temporaryBC = NewBlockchain()
+	abi.SetAddressParser(temporarySender.Length(), func(bytes []byte) string {
+		return BytesToAddress(bytes).String()
+	})
+	callBalance(t, memoryDB, temporaryBC, temporarySender, "info", nil, []string{temporarySender.String(), "30"})
 }
 
 func callBalance(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string) {

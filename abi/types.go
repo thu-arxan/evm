@@ -498,10 +498,14 @@ func (e EVMAddress) pack(v interface{}) ([]byte, error) {
 }
 
 func (e EVMAddress) unpack(data []byte, offset int, v interface{}) (int, error) {
-	value := data[offset+ElementSize-20 : offset+ElementSize]
+	value := data[offset+ElementSize-addressLength : offset+ElementSize]
 	switch v := v.(type) {
 	case *string:
-		*v = util.Hex(value)
+		if addressToString == nil {
+			*v = util.Hex(value)
+		} else {
+			*v = addressToString(value)
+		}
 	case *([]byte):
 		*v = value
 	default:
