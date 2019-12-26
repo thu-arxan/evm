@@ -501,7 +501,7 @@ func (e EVMAddress) unpack(data []byte, offset int, v interface{}) (int, error) 
 	value := data[offset+ElementSize-20 : offset+ElementSize]
 	switch v := v.(type) {
 	case *string:
-		*v = util.Hex(data)
+		*v = util.Hex(value)
 	case *([]byte):
 		*v = value
 	default:
@@ -1196,9 +1196,10 @@ func UnpackIntoStruct(argSpec []Argument, data []byte, st interface{}) error {
 
 // Unpack unpack data into interfaces
 func Unpack(argSpec []Argument, data []byte, args ...interface{}) error {
-	return unpack(argSpec, data, func(i int) interface{} {
+	err := unpack(argSpec, data, func(i int) interface{} {
 		return args[i]
 	})
+	return err
 }
 
 func unpack(argSpec []Argument, data []byte, getArg func(int) interface{}) error {
