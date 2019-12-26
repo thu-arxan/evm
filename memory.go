@@ -34,7 +34,7 @@ type Memory interface {
 	// written will equal offset). The value is provided as bytes to be written
 	// consecutively to the memory store. Return an error if the memory cannot be
 	// written or allocated.
-	Write(offset *big.Int, value []byte)
+	Write(offset *big.Int, value []byte) (gasCost uint64)
 	// Returns the current capacity of the memory. For dynamically allocating
 	// memory this capacity can be used as a write offset that is guaranteed to be
 	// unused. Solidity in particular makes this assumption when using MSIZE to
@@ -55,7 +55,7 @@ func NewDynamicMemory(initialCapacity, maximumCapacity uint64, errSink errors.Si
 
 // DefaultDynamicMemoryProvider return to default DynamicMemory
 func DefaultDynamicMemoryProvider(errSink errors.Sink) Memory {
-	return NewDynamicMemory(defaultInitialMemoryCapacity, defaultMaximumMemoryCapacity, errSink)
+	return NewDynamicMemory(0, defaultMaximumMemoryCapacity, errSink)
 }
 
 // Implements a bounded dynamic memory that relies on Go's (pretty good) dynamic
@@ -64,6 +64,7 @@ type dynamicMemory struct {
 	slice           []byte
 	maximumCapacity uint64
 	errSink         errors.Sink
+	prevGasCost     uint64
 }
 
 // Read is the implementation of Memory
@@ -87,16 +88,20 @@ func (mem *dynamicMemory) Read(offset, length *big.Int) []byte {
 }
 
 // Write is the implementation of Memory
-func (mem *dynamicMemory) Write(offset *big.Int, value []byte) {
+func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 	// Ensures positive and not too wide
 	if !offset.IsUint64() {
 		mem.pushErr(fmt.Errorf("offset %v does not fit inside an unsigned 64-bit integer", offset))
-		return
+		return 0
 	}
 	err := mem.write(offset.Uint64(), value)
 	if err != nil {
 		mem.pushErr(err)
 	}
+	size := uint64(len(mem.slice)+31) / 32
+	prevGasCost := mem.prevGasCost
+	mem.prevGasCost = GasMemory*size + (size*size)/512
+	return mem.prevGasCost - prevGasCost
 }
 
 // Capacity is the implementation of Memory

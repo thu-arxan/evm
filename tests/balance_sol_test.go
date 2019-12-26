@@ -24,7 +24,7 @@ func TestBalanceSol(t *testing.T) {
 	require.NoError(t, err)
 	bc := example.NewBlockchain()
 	memoryDB := db.NewMemory(bc.NewAccount)
-	var gas uint64 = 10000
+	var gas uint64 = 1000000
 	vm := evm.New(bc, memoryDB, &evm.Context{
 		Input: binBytes,
 		Value: 0,
@@ -42,6 +42,7 @@ func TestBalanceSol(t *testing.T) {
 	require.Equal(t, uint64(1), account.GetNonce())
 	balanceAddress = contractAddress
 	balanceCode = code
+	require.Equal(t, uint64(855600), gas, fmt.Sprintf("except %d while get %d", 855600, gas))
 	// then call the contract with get function
 	callBalance(t, memoryDB, bc, origin, "get", nil, []string{"10"})
 	// then set value to 20

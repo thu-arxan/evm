@@ -35,7 +35,7 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 
 // Push push core.Word256 into stack
 func (st *Stack) Push(word core.Word256) {
-	st.useGas(GasStackOp)
+	// st.useGas(GasStackOp)
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
 		st.pushErr(errors.DataStackOverflow)
@@ -47,7 +47,7 @@ func (st *Stack) Push(word core.Word256) {
 
 // Pop pos a core.Word256 from the stak
 func (st *Stack) Pop() core.Word256 {
-	st.useGas(GasStackOp)
+	// st.useGas(GasStackOp)
 	if st.ptr == 0 {
 		st.pushErr(errors.DataStackUnderflow)
 		return core.Zero256
@@ -123,7 +123,7 @@ func (st *Stack) Len() int {
 
 // Swap swap stack
 func (st *Stack) Swap(n int) {
-	st.useGas(GasStackOp)
+	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
@@ -133,7 +133,7 @@ func (st *Stack) Swap(n int) {
 
 // Dup duplicate stack
 func (st *Stack) Dup(n int) {
-	st.useGas(GasStackOp)
+	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
@@ -212,13 +212,13 @@ func (st *Stack) ensureCapacity(newCapacity uint64) error {
 	return nil
 }
 
-func (st *Stack) useGas(gasToUse uint64) {
-	if *st.gas > gasToUse {
-		*st.gas -= gasToUse
-	} else {
-		st.pushErr(errors.InsufficientGas)
-	}
-}
+// func (st *Stack) useGas(gasToUse uint64) {
+// 	if *st.gas > gasToUse {
+// 		*st.gas -= gasToUse
+// 	} else {
+// 		st.pushErr(errors.InsufficientGas)
+// 	}
+// }
 
 func (st *Stack) pushErr(err error) {
 	st.errSink.PushError(err)
