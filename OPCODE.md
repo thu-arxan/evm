@@ -18,6 +18,8 @@
 - LT
 - DUP2
 - SHR
+- MUL
+- DIV
 - RETURN
 - ADD
 - SUB
@@ -28,6 +30,21 @@
 - CALLDATALOAD
 - MLOAD
 - SLOAD
+- BYTE
+- SDIV
+- MOD
+- SMOD
+- ADDMOD
+- MULMOD
+- EXP
+- GT
+- SLT
+- SGT
+- OR
+- XOR
+- NOT
+- SHL
+- SAR
 
 ## 2. 部分测试
 
@@ -36,24 +53,8 @@
 ## 3. 尚未测试
 
 - STOP
-- MUL
-- DIV
-- SDIV
-- MOD
-- SMOD
-- ADDMOD
-- MULMOD
-- EXP
+
 - SIGNEXTEND
-- GT
-- SLT
-- SGT
-- OR
-- XOR
-- NOT
-- BYTE
-- SHL
-- SAR
 - SHA3
 - ADDRESS
 - BALANCE
