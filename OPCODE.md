@@ -53,7 +53,6 @@
 ## 3. 尚未测试
 
 - STOP
-
 - SIGNEXTEND
 - SHA3
 - ADDRESS
