@@ -262,6 +262,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case EXP: // 0x0A
+			// 	TODO: Fix the gas
 			x, y := stack.PopBigInt(), stack.PopBigInt()
 			pow := new(big.Int).Exp(x, y, nil)
 			res := stack.PushBigInt(pow)
@@ -393,6 +394,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%X\n", res)
 
 		case SHL: //0x1B
+			// TODO: Find out the gas usage
 			shift, x := stack.PopBigInt(), stack.PopBigInt()
 
 			if shift.Cmp(core.Big256) >= 0 {
@@ -406,6 +408,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SHR: //0x1C
+			// TODO: Find out the gas usage
 			shift, x := stack.PopBigInt(), stack.PopBigInt()
 
 			if shift.Cmp(core.Big256) >= 0 {
@@ -419,6 +422,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SAR: //0x1D
+			// 	TODO: Find out the gas usage
 			shift, x := stack.PopBigInt(), stack.PopSignedBigInt()
 
 			if shift.Cmp(core.Big256) >= 0 {
@@ -435,7 +439,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SHA3: // 0x20
-			maybe.PushError(useGasNegative(ctx.Gas, GasSha3))
+			// TODO:Fix the gas
+			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			data := memory.Read(offset, size)
 			data = crypto.Keccak256(data)
@@ -448,8 +453,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> %v\n", callee)
 
 		case BALANCE: // 0x31
+			maybe.PushError(useGasNegative(ctx.Gas, GasBalance))
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			balance := evm.getAccount(maybe, address).GetBalance()
 			stack.PushUint64(balance)
 			log.Debugf("=> %v (%v)\n", balance, address)
@@ -527,7 +532,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case EXTCODESIZE: // 0x3B
 			maybe.PushError(useGasNegative(ctx.Gas, GasExtCode))
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			acc := evm.getAccount(maybe, address)
 			length := uint64(len(acc.GetCode()))
 			stack.PushUint64(length)
@@ -535,7 +539,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case EXTCODECOPY: // 0x3C
 			address := stack.PopAddress()
-			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			code := evm.getAccount(maybe, address).GetCode()
 			memOff := stack.PopBigInt()
 			codeOff := stack.PopUint64()
@@ -567,6 +570,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
 		case EXTCODEHASH: // 0x3F
+			// TODO: Fix the gas usage
 			address := stack.PopAddress()
 			acc := evm.getAccount(maybe, address)
 			// keccak256 hash of a contract's code
@@ -579,8 +583,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			stack.Push(extcodehash)
 
 		case BLOCKHASH: // 0x40
+			maybe.PushError(useGasNegative(ctx.Gas, GasBlockHash))
 			blockNumber := stack.PopUint64()
-
 			// Note: Here is >= other than > because block is not generated while running tx
 			if blockNumber >= ctx.BlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
@@ -655,6 +659,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v] 0x%X\n", offset, val)
 
 		case SLOAD: // 0x54
+			maybe.PushError(useGasNegative(ctx.Gas, GasSload))
 			loc := stack.Pop()
 			value := evm.cache.GetStorage(callee, loc)
 			data := core.LeftPadWord256(value)
@@ -740,6 +745,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%d] %v\n", n, stack.Peek())
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
+			// todo: gas usage
 			n := int(op - LOG0)
 			topics := make([]core.Word256, n)
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -755,13 +761,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
+			// TODO: Fix the gas usage
 			returnData = nil
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input := memory.Read(offset, size)
 
 			// TODO charge for gas to create account _ the code length * GasCreateByte
-			maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
+			// maybe.PushError(useGasNegative(ctx.Gas, GasCreateAccount))
 
 			var newAccountAddress Address
 			if op == CREATE {
@@ -810,6 +817,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case CALL, CALLCODE, DELEGATECALL, STATICCALL: // 0xF1, 0xF2, 0xF4, 0xFA
+			// todo: gas usage
 			returnData = nil
 			// Pull arguments off stack:
 			gasLimit := stack.PopUint64()
@@ -832,7 +840,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 			// Get the arguments from the memory
 			// EVM contract
-			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
+			// maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			// since CALL is used also for sending funds,
 			// acc may not exist yet. This is an errors.CodedError for
 			// CALLCODE, but not for CALL, though I don't think
@@ -971,8 +979,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			return nil, maybe.Error()
 
 		case SELFDESTRUCT: // 0xFF
+			// todo: gas usage
 			receiver := stack.PopAddress()
-			maybe.PushError(useGasNegative(ctx.Gas, GasGetAccount))
 			account := evm.getAccount(maybe, receiver)
 			balance := evm.getAccount(maybe, callee).GetBalance()
 			maybe.PushError(account.AddBalance(balance))
