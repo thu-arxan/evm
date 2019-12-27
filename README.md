@@ -58,9 +58,11 @@ function info() public view returns (address, uint) {
 
 其生成的汇编代码并不会老老实实的将传进来的sender地址返回，有可能会通过一个PUSH20指令将地址截断放到栈中并使用(可能是为了gas消耗角度考虑)，这样一来地址的有效信息就被截断了，所以会导致信息丢失。
 
-### 2.3. DB
+### 2.3. DB & WriteBatch
 
-数据库暂定接口如下。
+二者暂定接口如下,关于二者的定义，还需要进一步明确一下边界情况。
+
+### 2.4. DB
 
 ```golang
 // Exist return if the account exist
@@ -70,6 +72,11 @@ Exist(address Address) bool
 GetAccount(address Address) Account
 // Note: GetStorage return nil if key is not exist
 GetStorage(address Address, key core.Word256) (value []byte)
+```
+
+### 2.5. WriteBatch
+
+```golang
 SetStorage(address Address, key core.Word256, value []byte)
 UpdateAccount(account Account) error
 // Remove the account at address
@@ -77,9 +84,7 @@ RemoveAccount(address Address) error
 AddLog(log *Log)
 ```
 
-关于这一部分的定义，还需要进一步明确一下边界情况。
-
-### 2.4. Blockchain
+### 2.6. Blockchain
 
 ```golang
 GetBlockHash(num uint64) ([]byte, error)
@@ -99,6 +104,6 @@ BytesToAddress(bytes []byte) Address
 - NewAccount：根据一个地址返回默认的账户（请不要在DB里面也插入该账户，需要的时候EVM会调用DB的相关函数去插入）。
 - BytesToAddress：将byte数组(长度一般为32位)解析为用户定义的Address。
 
-## 如何调用
+## 3. 如何调用
 
 参考example中的样例，文档待更新。
