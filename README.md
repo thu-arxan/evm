@@ -62,7 +62,7 @@ function info() public view returns (address, uint) {
 
 二者暂定接口如下,关于二者的定义，还需要进一步明确一下边界情况。
 
-### 2.4. DB
+#### 2.3.1. DB
 
 ```golang
 // Exist return if the account exist
@@ -74,7 +74,7 @@ GetAccount(address Address) Account
 GetStorage(address Address, key core.Word256) (value []byte)
 ```
 
-### 2.5. WriteBatch
+#### 2.3.2. WriteBatch
 
 ```golang
 SetStorage(address Address, key core.Word256, value []byte)
@@ -84,7 +84,7 @@ RemoveAccount(address Address) error
 AddLog(log *Log)
 ```
 
-### 2.6. Blockchain
+### 2.4. Blockchain
 
 ```golang
 GetBlockHash(num uint64) ([]byte, error)
