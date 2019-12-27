@@ -1,0 +1,40 @@
+# OPCODE
+
+记录下测试过的OPCODE。
+
+## 相对完备
+
+- PUSH1
+- PUSH2
+- PUSH4
+- POP
+- SWAP1
+- SWAP2
+- SWAP3
+- CALLVALUE
+- DUP1
+- DUP3
+- DUP4
+- ISZERO
+- JUMP
+- JUMPI
+- JUMPDEST
+- EQ
+- CALLDATASIZE
+- LT
+- DUP2
+- SHR
+- RETURN
+- ADD
+- SUB
+- AND
+- CALLER
+- MSTORE
+- CODECOPY
+- CALLDATALOAD
+- MLOAD
+- SLOAD
+
+## 部分测试
+
+- SSTORE(Gas的计算比较复杂，一是多个分支，另一个是以太坊升级过程中修改了Gas计算方式)
