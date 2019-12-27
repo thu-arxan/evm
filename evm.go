@@ -18,6 +18,7 @@ import (
 const (
 	DefaultStackCapacity    uint64 = 1024
 	DefaultMaxStackCapacity uint64 = 32 * 1024
+	MaxCodeSize             int    = 24576
 )
 
 func init() {
@@ -76,7 +77,9 @@ func (evm *EVM) Create(caller Address) ([]byte, Address, error) {
 	if useGasNegative(evm.ctx.Gas, createDataGas) != nil {
 		return nil, nil, errors.InsufficientGas
 	}
-	// todo: check code size
+	if len(code) > MaxCodeSize {
+		return nil, nil, errors.CodeOutOfBounds
+	}
 	account = evm.cache.GetAccount(address)
 	account.SetCode(code)
 
@@ -857,8 +860,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				}
 			}
 			acc := evm.getAccount(maybe, target)
-			// Establish a stack frame and perform the call
-			// todo: we may need cache to support this
 
 			// Ensure that gasLimit is reasonable
 			if *ctx.Gas < gasLimit {
@@ -940,8 +941,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				// So we can return nested errors.CodedError if the top level return is an errors.CodedError
 				stack.Push(core.Zero256)
 
-				// todo: maybe wrong to compare two errors?
-				if callErr == errors.ExecutionReverted {
+				if callErr.Error() == errors.ExecutionReverted.Error() {
 					gasCost = memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
 				}
 			} else {
