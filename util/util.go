@@ -5,6 +5,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
+	"math/big"
 	"math/rand"
 	"reflect"
 	"strings"
@@ -115,4 +116,13 @@ func FixBytesLength(bytes []byte, length int) []byte {
 // Hex is the wrapper of fmt.Sprintf("%x", data)
 func Hex(data []byte) string {
 	return fmt.Sprintf("%x", data)
+}
+
+// Log256 call and down round
+func Log256(x *big.Int) int {
+	if x.Sign() <= 0 {
+		return 0
+	}
+	fmt.Println(x.Text(2))
+	return (len(x.Text(2)) - 1) / 8
 }

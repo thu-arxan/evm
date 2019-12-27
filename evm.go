@@ -262,8 +262,12 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case EXP: // 0x0A
-			// 	TODO: Fix the gas
 			x, y := stack.PopBigInt(), stack.PopBigInt()
+			if y.Sign() == 0 {
+				maybe.PushError(useGasNegative(ctx.Gas, GasExp))
+			} else {
+				maybe.PushError(useGasNegative(ctx.Gas, GasExp+GasExpByte*uint64(1+util.Log256(y))))
+			}
 			pow := new(big.Int).Exp(x, y, nil)
 			res := stack.PushBigInt(pow)
 			log.Debugf("%v ** %v = %v (%v)\n", x, y, pow, res)
@@ -394,9 +398,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> 0x%X\n", res)
 
 		case SHL: //0x1B
-			// TODO: Find out the gas usage
+			maybe.PushError(useGasNegative(ctx.Gas, GasVeryLow))
 			shift, x := stack.PopBigInt(), stack.PopBigInt()
-
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				stack.PushBigInt(reset)
@@ -408,9 +411,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SHR: //0x1C
-			// TODO: Find out the gas usage
+			maybe.PushError(useGasNegative(ctx.Gas, GasVeryLow))
 			shift, x := stack.PopBigInt(), stack.PopBigInt()
-
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				stack.PushBigInt(reset)
@@ -422,9 +424,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SAR: //0x1D
-			// 	TODO: Find out the gas usage
+			maybe.PushError(useGasNegative(ctx.Gas, GasVeryLow))
 			shift, x := stack.PopBigInt(), stack.PopSignedBigInt()
-
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				if x.Sign() < 0 {
@@ -439,9 +440,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SHA3: // 0x20
-			// TODO:Fix the gas
-			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
+			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3+GasSHA3Word*(size.Uint64()+31)/32))
 			data := memory.Read(offset, size)
 			data = crypto.Keccak256(data)
 			stack.PushBytes(data)
@@ -548,7 +548,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
 			gasCost := memory.Write(memOff, data)
-			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
+			maybe.PushError(useGasNegative(ctx.Gas, GasExtCode+gasCost))
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
 		case RETURNDATASIZE: // 0x3D
