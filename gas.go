@@ -1,6 +1,7 @@
 package evm
 
 // Here defines some kind of gas costs
+// todo: Gas cost may changed
 const (
 	GasZero          uint64 = 0
 	GasBase          uint64 = 2
@@ -9,8 +10,8 @@ const (
 	GasMid           uint64 = 8
 	GasHigh          uint64 = 10
 	GasExtCode       uint64 = 700
-	GasBalance       uint64 = 400
-	GasSload         uint64 = 200
+	GasBalance       uint64 = 700 //EIP-1884 change it from 400 to 700
+	GasSload         uint64 = 800 //EIP-1884 change it from 200 to 800
 	GasJumpDest      uint64 = 1
 	GasSset          uint64 = 20000
 	GasSclear        uint64 = 5000

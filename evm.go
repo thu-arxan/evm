@@ -62,7 +62,6 @@ func (evm *EVM) Create(caller Address) ([]byte, Address, error) {
 		return nil, address, err
 	}
 	// add nonce
-	// todo: rethink this
 	account := evm.cache.GetAccount(address)
 	account.SetNonce(account.GetNonce() + 1)
 	// transfer and run
