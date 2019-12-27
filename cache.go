@@ -103,13 +103,14 @@ func (cache *Cache) AddLog(log *Log) {
 
 // Sync will sync change to db
 func (cache *Cache) Sync() {
+	wb := cache.db.NewWriteBatch()
 	for _, info := range cache.accounts {
 		if info.removed {
-			cache.db.RemoveAccount(info.account.GetAddress())
+			wb.RemoveAccount(info.account.GetAddress())
 		} else if info.updated {
-			cache.db.UpdateAccount(info.account)
+			wb.UpdateAccount(info.account)
 			for key, value := range info.storage {
-				cache.db.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
+				wb.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
 			}
 		}
 	}

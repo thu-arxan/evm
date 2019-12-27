@@ -61,6 +61,11 @@ func (m *Memory) GetStorage(address evm.Address, key core.Word256) []byte {
 	return nil
 }
 
+// NewWriteBatch is the implementation of interface
+func (m *Memory) NewWriteBatch() evm.WriteBatch {
+	return m
+}
+
 // SetStorage is the implementation of interface
 func (m *Memory) SetStorage(address evm.Address, key core.Word256, value []byte) {
 	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())

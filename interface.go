@@ -35,6 +35,11 @@ type DB interface {
 	GetAccount(address Address) Account
 	// Note: GetStorage return nil if key is not exist
 	GetStorage(address Address, key core.Word256) (value []byte)
+	NewWriteBatch() WriteBatch
+}
+
+// WriteBatch define a batch which support some write operations
+type WriteBatch interface {
 	SetStorage(address Address, key core.Word256, value []byte)
 	UpdateAccount(account Account) error
 	// Remove the account at address
