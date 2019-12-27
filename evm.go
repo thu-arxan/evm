@@ -656,17 +656,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SLOAD: // 0x54
 			loc := stack.Pop()
-			value, err := evm.cache.GetStorage(callee, loc)
-			if err != nil {
-				maybe.PushError(err)
-			}
+			value := evm.cache.GetStorage(callee, loc)
 			data := core.LeftPadWord256(value)
 			stack.Push(data)
 			log.Debugf("%v {0x%v = 0x%v}\n", callee, loc, data)
 
 		case SSTORE: // 0x55
 			loc, data := stack.Pop(), stack.Pop()
-			prevData, _ := evm.cache.GetStorage(callee, loc)
+			prevData := evm.cache.GetStorage(callee, loc)
 			if isEmptyValue(prevData) && !data.IsZero() {
 				maybe.PushError(useGasNegative(ctx.Gas, GasSset))
 			} else if !isEmptyValue(prevData) && data.IsZero() {
@@ -675,8 +672,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			} else {
 				maybe.PushError(useGasNegative(ctx.Gas, GasSreset))
 			}
-			maybe.PushError(evm.cache.SetStorage(callee, loc, data.Bytes()))
-
+			evm.cache.SetStorage(callee, loc, data.Bytes())
 			log.Debugf("%v {%v := %v}\n", callee, loc, data)
 
 		case JUMP: // 0x56

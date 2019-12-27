@@ -64,31 +64,29 @@ func (cache *Cache) RemoveAccount(address Address) error {
 }
 
 // GetStorage returns the key of an address if exist, else returns an error
-func (cache *Cache) GetStorage(address Address, key core.Word256) ([]byte, error) {
+func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
 	accInfo := cache.get(address)
 
 	if util.Contain(accInfo.storage, word256ToString(key)) {
-		return accInfo.storage[word256ToString(key)], nil
+		return accInfo.storage[word256ToString(key)]
 	}
-	value, err := cache.db.GetStorage(address, key)
-	if err != nil {
-		return core.Zero256.Bytes(), err
-	}
+	value := cache.db.GetStorage(address, key)
+	// todo: if we need to deal nil?
 	accInfo.storage[word256ToString(key)] = value
-	return value, nil
+	return value
 }
 
 // SetStorage set the storage of address
 // NOTE: Set value to zero to remove. How should i understand this?
 // TODO: Review this
-func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) error {
+func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) {
 	accInfo := cache.get(address)
-	if accInfo.removed {
-		return fmt.Errorf("SetStorage on a removed account: %s", addressToString(address))
-	}
+	// todo: how to deal account removed
+	// if accInfo.removed {
+	// 	return fmt.Errorf("SetStorage on a removed account: %s", addressToString(address))
+	// }
 	accInfo.storage[word256ToString(key)] = value
 	accInfo.updated = true
-	return nil
 }
 
 // GetNonce return the nonce of account
