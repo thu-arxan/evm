@@ -747,7 +747,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%d] %v\n", n, stack.Peek())
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
-			// todo: gas usage
 			n := int(op - LOG0)
 			topics := make([]core.Word256, n)
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
@@ -755,6 +754,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				topics[i] = stack.Pop()
 			}
 			data := memory.Read(offset, size)
+			// TODO: Add test to test this
+			maybe.PushError(useGasNegative(ctx.Gas, GasLog+GasLogData*(size.Uint64()+31)/32+uint64(op-LOG0)*GasLogTopic))
 			evm.cache.AddLog(&Log{
 				Address: callee,
 				Topics:  topics,
