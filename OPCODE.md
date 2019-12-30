@@ -33,7 +33,6 @@
 - BYTE
 - SDIV
 - MOD
-- SMOD
 - ADDMOD
 - MULMOD
 - EXP
@@ -48,7 +47,8 @@
 
 ## 2. 部分测试
 
-- SSTORE(Gas的计算比较复杂，一是多个分支，另一个是以太坊升级过程中修改了Gas计算方式)
+- SSTORE(增加了对EIP-2200的支持，需要覆盖足够的分支进一步测试)
+- SMOD(需要看看是否和Ethereum一致)
 
 ## 3. 尚未测试
 
