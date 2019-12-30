@@ -6,6 +6,7 @@ import (
 	"evm/db"
 	"evm/example"
 	"evm/util"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -29,20 +30,22 @@ func TestMathSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	mathCode, mathAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 246938)
 	// then call the contract with chaos function
-	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 53957)
+	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 53957, 30000)
+
 }
 
 // you can set gasCost to 0 if you do not want to compare gasCost
-func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string, gasCost uint64) {
+func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string, gasCost, refund uint64) {
 	payload, err := abi.GetPayloadBytes(mathAbi, funcName, inputs)
 	require.NoError(t, err)
 	var gasQuota uint64 = 10000000
 	var gas = gasQuota
-	output, err := evm.New(bc, db, &evm.Context{
+	vm := evm.New(bc, db, &evm.Context{
 		Input: payload,
 		Value: 0,
 		Gas:   &gas,
-	}).Call(caller, mathAddress, mathCode)
+	})
+	output, err := vm.Call(caller, mathAddress, mathCode)
 	require.NoError(t, err)
 	variables, err := abi.Unpacker(mathAbi, funcName, output)
 	require.NoError(t, err)
@@ -53,5 +56,5 @@ func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, fu
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
-
+	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
 }
