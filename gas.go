@@ -1,8 +1,7 @@
 package evm
 
 // Here defines some kind of gas costs
-// Note: We are using eip-1884 other than eip-2200 because eip-2200 need more supports of db, which is a little bit difficult.
-// We may change eip-1884 to eip-2200 until this version is stable.
+// TODO: We try our best to support EIP-2200
 const (
 	GasZero          uint64 = 0
 	GasBase          uint64 = 2
@@ -40,4 +39,14 @@ const (
 	GasBlockHash     uint64 = 20
 	GasQuadDivisor   uint64 = 20
 	GasCreateData    uint64 = 200
+
+	// EIP2200 changes many things of Sstore
+	GasSstoreSentryEIP2200      uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed
+	GasSstoreNoopEIP2200        uint64 = 800   // Once per SSTORE operation if the value doesn't change.
+	GasSstoreDirtyEIP2200       uint64 = 800   // Once per SSTORE operation if a dirty value is changed.
+	GasSstoreInitEIP2200        uint64 = 20000 // Once per SSTORE operation from clean zero to non-zero
+	GasSstoreInitRefundEIP2200  uint64 = 19200 // Once per SSTORE operation for resetting to the original zero value
+	GasSstoreCleanEIP2200       uint64 = 5000  // Once per SSTORE operation from clean non-zero to something else
+	GasSstoreCleanRefundEIP2200 uint64 = 4200  // Once per SSTORE operation for resetting to the original non-zero value
+	GasSstoreClearRefundEIP2200 uint64 = 15000 // Once per SSTORE operation for clearing an originally existing storage slot
 )

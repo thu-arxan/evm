@@ -670,14 +670,42 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SSTORE: // 0x55
 			loc, data := stack.Pop(), stack.Pop()
-			prevData := evm.cache.GetStorage(callee, loc)
-			if isEmptyValue(prevData) && !data.IsZero() {
-				maybe.PushError(useGasNegative(ctx.Gas, GasSset))
-			} else if !isEmptyValue(prevData) && data.IsZero() {
-				// todo: should we refund gas?
-				maybe.PushError(useGasNegative(ctx.Gas, GasSclear))
+			currentData := evm.cache.GetStorage(callee, loc)
+			if *ctx.Gas <= GasSstoreSentryEIP2200 {
+				maybe.PushError(errors.InsufficientGas)
+			}
+			if bytes.Equal(data.Bytes(), currentData) {
+				maybe.PushError(useGasNegative(ctx.Gas, GasSstoreNoopEIP2200))
 			} else {
-				maybe.PushError(useGasNegative(ctx.Gas, GasSreset))
+				originData := evm.cache.db.GetStorage(callee, loc)
+				if bytes.Equal(originData, currentData) {
+					if isEmptyValue(originData) {
+						maybe.PushError(useGasNegative(ctx.Gas, GasSstoreInitEIP2200))
+					} else {
+						if isEmptyValue(data.Bytes()) {
+							// todo: refund
+							// evm.StateDB.AddRefund(params.SstoreClearRefundEIP2200)
+						}
+						maybe.PushError(useGasNegative(ctx.Gas, GasSstoreCleanEIP2200))
+					}
+				} else {
+					// todo: refund
+					// if !isEmptyValue(originData) {
+					// 	if isEmptyValue(currentData) { // recreate slot (2.2.1.1)
+					// 		evm.StateDB.SubRefund(params.SstoreClearRefundEIP2200)
+					// 	} else if isEmptyValue(data) { // delete slot (2.2.1.2)
+					// 		evm.StateDB.AddRefund(params.SstoreClearRefundEIP2200)
+					// 	}
+					// }
+					// if bytes.Equal(originData, data) {
+					// 	if isEmptyValue(originData) { // reset to original inexistent slot (2.2.2.1)
+					// 		evm.StateDB.AddRefund(params.SstoreInitRefundEIP2200)
+					// 	} else { // reset to original existing slot (2.2.2.2)
+					// 		evm.StateDB.AddRefund(params.SstoreCleanRefundEIP2200)
+					// 	}
+					// }
+					maybe.PushError(useGasNegative(ctx.Gas, GasSstoreDirtyEIP2200))
+				}
 			}
 			evm.cache.SetStorage(callee, loc, data.Bytes())
 			log.Debugf("%v {%v := %v}\n", callee, loc, data)

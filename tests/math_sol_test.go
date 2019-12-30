@@ -29,17 +29,14 @@ func TestMathSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	mathCode, mathAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 246938)
 	// then call the contract with chaos function
-	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 123557)
+	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 53957)
 }
 
 // you can set gasCost to 0 if you do not want to compare gasCost
 func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string, gasCost uint64) {
 	payload, err := abi.GetPayloadBytes(mathAbi, funcName, inputs)
 	require.NoError(t, err)
-	var gasQuota uint64 = 1000000
-	if gasCost != 0 {
-		gasQuota = gasCost
-	}
+	var gasQuota uint64 = 10000000
 	var gas = gasQuota
 	output, err := evm.New(bc, db, &evm.Context{
 		Input: payload,
