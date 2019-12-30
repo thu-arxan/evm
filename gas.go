@@ -10,6 +10,7 @@ const (
 	GasMid           uint64 = 8
 	GasHigh          uint64 = 10
 	GasExtCode       uint64 = 700
+	GasExtcodeHash   uint64 = 700 //EIP-1884 change it from 400 to 700
 	GasBalance       uint64 = 700 //EIP-1884 change it from 400 to 700
 	GasSload         uint64 = 800 //EIP-1884 change it from 200 to 800
 	GasJumpDest      uint64 = 1

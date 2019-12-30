@@ -590,7 +590,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
 		case EXTCODEHASH: // 0x3F
-			// TODO: Fix the gas usage
+			maybe.PushError(useGasNegative(ctx.Gas, GasExtcodeHash))
 			address := stack.PopAddress()
 			acc := evm.getAccount(maybe, address)
 			// keccak256 hash of a contract's code
