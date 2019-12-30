@@ -1,7 +1,8 @@
 package evm
 
 // Here defines some kind of gas costs
-// todo: Gas cost may changed
+// Note: We are using eip-1884 other than eip-2200 because eip-2200 need more supports of db, which is a little bit difficult.
+// We may change eip-1884 to eip-2200 until this version is stable.
 const (
 	GasZero          uint64 = 0
 	GasBase          uint64 = 2
