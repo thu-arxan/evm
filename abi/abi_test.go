@@ -2,11 +2,11 @@ package abi
 
 import (
 	"bytes"
+	"encoding/hex"
 	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/require"
-	"github.com/tmthrgd/go-hex"
 )
 
 //To Test:
