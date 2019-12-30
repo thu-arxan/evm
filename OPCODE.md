@@ -76,7 +76,7 @@
 - PC
 - MSIZE
 - GAS
-- CREATE
+- CREATE(也需要弄明白nonce变换的过程)
 - CALL
 - CALLCODE
 - DELEGATECALL

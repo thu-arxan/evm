@@ -546,10 +546,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case GASPRICE: // 0x3A
 			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
-			// Note: we will always set this to zero now
-			// todo: if there is need we support gas price?
-			stack.Push(core.Zero256)
-			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
+			stack.PushUint64(ctx.GasPrice)
+			log.Debugf("=> %v\n", ctx.GasPrice)
 
 		case EXTCODESIZE: // 0x3B
 			maybe.PushError(useGasNegative(ctx.Gas, GasExtCode))
@@ -625,8 +623,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case COINBASE: // 0x41
 			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
-			// todo: we may support coinbase
-			stack.Push(core.Zero256)
+			stack.PushBytes(ctx.CoinBase)
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42

@@ -2,6 +2,7 @@ package evm
 
 import (
 	"evm/core"
+	"evm/util"
 	"fmt"
 	"math"
 	"math/big"
@@ -56,12 +57,9 @@ func (st *Stack) Pop() core.Word256 {
 	return st.data[st.ptr]
 }
 
-// PushBytes push bytes into stack, it should be only called after sha3.Sha3
-// Bytes length should be 32, otherwise it will panic
+// PushBytes push bytes into stack, bytes length would fixed to 32
 func (st *Stack) PushBytes(bz []byte) {
-	if len(bz) != 32 {
-		panic("Invalid bytes size: expected 32")
-	}
+	bz = util.FixBytesLength(bz, 32)
 	st.Push(core.LeftPadWord256(bz))
 }
 
