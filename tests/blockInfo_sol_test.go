@@ -2,7 +2,6 @@ package tests
 
 import (
 	"evm"
-	"evm/abi"
 	"evm/db"
 	"evm/example"
 	"evm/util"
@@ -38,7 +37,7 @@ func callInfo(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, ex
 		Gas: &gas,
 	}).Call(caller, blockInfoAddress, blockInfoCode)
 	require.NoError(t, err)
-	require.Equal(excepts, output)
+	require.Equal(t, excepts, output)
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
