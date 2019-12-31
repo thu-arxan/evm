@@ -123,6 +123,5 @@ func Log256(x *big.Int) int {
 	if x.Sign() <= 0 {
 		return 0
 	}
-	fmt.Println(x.Text(2))
 	return (len(x.Text(2)) - 1) / 8
 }

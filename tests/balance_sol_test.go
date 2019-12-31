@@ -53,7 +53,7 @@ func TestBalanceSol(t *testing.T) {
 func callBalance(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string, gasCost uint64) {
 	payload, err := abi.GetPayloadBytes(balanceAbi, funcName, inputs)
 	require.NoError(t, err)
-	var gasQuota uint64 = 10000
+	var gasQuota uint64 = 1000000
 	var gas = gasQuota
 	output, err := evm.New(bc, db, &evm.Context{
 		Input: payload,

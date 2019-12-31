@@ -14,3 +14,7 @@ func TestLog256(t *testing.T) {
 	require.Equal(t, 1, Log256(big.NewInt(65535)))
 	require.Equal(t, 2, Log256(big.NewInt(65536)))
 }
+
+func TestFixBytesLength(t *testing.T) {
+	require.Len(t, FixBytesLength(nil, 32), 32)
+}

@@ -33,6 +33,7 @@ type EVM struct {
 	cache          *Cache
 	memoryProvider func(errorSink errors.Sink) Memory
 	stackDepth     uint64
+	refund         uint64
 }
 
 // New is the constructor of EVM
@@ -114,6 +115,19 @@ func (evm *EVM) CallWithoutTransfer(caller, callee Address, code []byte) (output
 	// sync change to db if no error
 	evm.cache.Sync()
 	return
+}
+
+// GetRefund return the refund
+func (evm *EVM) GetRefund() uint64 {
+	return evm.refund
+}
+
+func (evm *EVM) addRefund(gas uint64) {
+	evm.refund += gas
+}
+
+func (evm *EVM) subRefund(gas uint64) {
+	evm.refund -= gas
 }
 
 func (evm *EVM) transfer(caller, callee Address, value uint64) error {
@@ -204,11 +218,17 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case SDIV: // 0x05
 			maybe.PushError(useGasNegative(ctx.Gas, GasLow))
 			x, y := stack.PopSignedBigInt(), stack.PopSignedBigInt()
-			if y.Sign() == 0 {
+			if x.Sign() == 0 || y.Sign() == 0 {
 				stack.Push(core.Zero256)
 				log.Debugf("%v / %v = %v", x, y, 0)
 			} else {
-				div := new(big.Int).Div(x, y)
+				var div *big.Int
+				if x.Sign() != y.Sign() {
+					div = new(big.Int).Div(x.Abs(x), y.Abs(y))
+					div.Neg(div)
+				} else {
+					div = new(big.Int).Div(x.Abs(x), y.Abs(y))
+				}
 				res := stack.PushBigInt(div)
 				log.Debugf("%v / %v = %v (%v)", x, y, div, res)
 			}
@@ -329,7 +349,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case EQ: // 0x14
 			maybe.PushError(useGasNegative(ctx.Gas, GasVeryLow))
 			x, y := stack.Pop(), stack.Pop()
-			if bytes.Equal(x[:], y[:]) {
+			if isEqual(x[:], y[:]) {
 				stack.Push(core.One256)
 				log.Debugf("%v == %v = %v\n", x, y, 1)
 			} else {
@@ -526,10 +546,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case GASPRICE: // 0x3A
 			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
-			// Note: we will always set this to zero now
-			// todo: if there is need we support gas price?
-			stack.Push(core.Zero256)
-			log.Debugf("=> %v (GASPRICE IS DEPRECATED)\n", core.Zero256)
+			stack.PushUint64(ctx.GasPrice)
+			log.Debugf("=> %v\n", ctx.GasPrice)
 
 		case EXTCODESIZE: // 0x3B
 			maybe.PushError(useGasNegative(ctx.Gas, GasExtCode))
@@ -572,7 +590,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
 		case EXTCODEHASH: // 0x3F
-			// TODO: Fix the gas usage
+			maybe.PushError(useGasNegative(ctx.Gas, GasExtcodeHash))
 			address := stack.PopAddress()
 			acc := evm.getAccount(maybe, address)
 			// keccak256 hash of a contract's code
@@ -605,8 +623,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case COINBASE: // 0x41
 			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
-			// todo: we may support coinbase
-			stack.Push(core.Zero256)
+			stack.PushBytes(ctx.CoinBase)
 			log.Debugf("=> 0x%v (NOT SUPPORTED)\n", stack.Peek())
 
 		case TIMESTAMP: // 0x42
@@ -670,14 +687,40 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SSTORE: // 0x55
 			loc, data := stack.Pop(), stack.Pop()
-			prevData := evm.cache.GetStorage(callee, loc)
-			if isEmptyValue(prevData) && !data.IsZero() {
-				maybe.PushError(useGasNegative(ctx.Gas, GasSset))
-			} else if !isEmptyValue(prevData) && data.IsZero() {
-				// todo: should we refund gas?
-				maybe.PushError(useGasNegative(ctx.Gas, GasSclear))
+			currentData := evm.cache.GetStorage(callee, loc)
+			if *ctx.Gas <= GasSstoreSentryEIP2200 {
+				maybe.PushError(errors.InsufficientGas)
+			}
+			if isEqual(data.Bytes(), currentData) {
+				maybe.PushError(useGasNegative(ctx.Gas, GasSstoreNoopEIP2200))
 			} else {
-				maybe.PushError(useGasNegative(ctx.Gas, GasSreset))
+				originData := evm.cache.db.GetStorage(callee, loc)
+				if isEqual(originData, currentData) {
+					if isEmptyValue(originData) {
+						maybe.PushError(useGasNegative(ctx.Gas, GasSstoreInitEIP2200))
+					} else {
+						if isEmptyValue(data.Bytes()) {
+							evm.addRefund(GasSstoreClearRefundEIP2200)
+						}
+						maybe.PushError(useGasNegative(ctx.Gas, GasSstoreCleanEIP2200))
+					}
+				} else {
+					if !isEmptyValue(originData) {
+						if isEmptyValue(currentData) { // recreate slot (2.2.1.1)
+							evm.subRefund(GasSstoreClearRefundEIP2200)
+						} else if isEmptyValue(data.Bytes()) { // delete slot (2.2.1.2)
+							evm.addRefund(GasSstoreClearRefundEIP2200)
+						}
+					}
+					if isEqual(originData, data.Bytes()) {
+						if isEmptyValue(originData) { // reset to original inexistent slot (2.2.2.1)
+							evm.addRefund(GasSstoreInitRefundEIP2200)
+						} else { // reset to original existing slot (2.2.2.2)
+							evm.addRefund(GasSstoreCleanRefundEIP2200)
+						}
+					}
+					maybe.PushError(useGasNegative(ctx.Gas, GasSstoreDirtyEIP2200))
+				}
 			}
 			evm.cache.SetStorage(callee, loc, data.Bytes())
 			log.Debugf("%v {%v := %v}\n", callee, loc, data)
@@ -1056,4 +1099,12 @@ func isEmptyValue(bytes []byte) bool {
 		}
 	}
 	return true
+}
+
+// isEqual will compare two bytes
+func isEqual(a, b []byte) bool {
+	if isEmptyValue(a) && isEmptyValue(b) {
+		return true
+	}
+	return bytes.Equal(a, b)
 }

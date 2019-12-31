@@ -10,5 +10,6 @@ type Context struct {
 	BlockTime   int64
 	Difficulty  uint64
 	GasLimit    uint64
+	GasPrice    uint64
 	CoinBase    []byte
 }
