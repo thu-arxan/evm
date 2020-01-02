@@ -58,6 +58,7 @@
 
 - SSTORE(增加了对EIP-2200的支持，需要覆盖足够的分支进一步测试)
 - SMOD(需要看看是否和Ethereum一致)
+- CALL(还未和EIP158一致)
 
 ## 3. 尚未测试
 
@@ -79,7 +80,6 @@
 - MSIZE
 - GAS
 - CREATE(也需要弄明白nonce变换的过程)
-- CALL
 - CALLCODE
 - DELEGATECALL
 - CREATE2
