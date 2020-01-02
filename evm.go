@@ -470,7 +470,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case SHA3: // 0x20
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3+GasSHA3Word*(size.Uint64()+31)/32))
-			data, _ := memory.Read(offset, size)
+			data, memoryGas := memory.Read(offset, size)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			data = crypto.Keccak256(data)
 			stack.PushBytes(data)
 			log.Debugf("=> (%v) %X\n", size, data)
@@ -674,7 +675,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case MLOAD: // 0x51
 			maybe.PushError(useGasNegative(ctx.Gas, GasVeryLow))
 			offset := stack.PopBigInt()
-			data, _ := memory.Read(offset, core.BigWord256Bytes)
+			data, memoryGas := memory.Read(offset, core.BigWord256Bytes)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			stack.Push(core.LeftPadWord256(data))
 			log.Debugf("=> 0x%X @ 0x%v\n", data, offset)
 
@@ -813,7 +815,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			for i := 0; i < n; i++ {
 				topics[i] = stack.Pop()
 			}
-			data, _ := memory.Read(offset, size)
+			data, memoryGas := memory.Read(offset, size)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			// TODO: Add test to test this
 			maybe.PushError(useGasNegative(ctx.Gas, GasLog+GasLogData*(size.Uint64()+31)/32+uint64(op-LOG0)*GasLogTopic))
 			evm.cache.AddLog(&Log{
@@ -895,8 +898,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				maybe.PushError(useGasNegative(ctx.Gas, GasCallValue))
 				// todo: address is empty in eip158
 			}
-			input, memoryGasCost := memory.Read(inOffset, inSize)
-			maybe.PushError(useGasNegative(ctx.Gas, memoryGasCost))
+			input, memoryGas := memory.Read(inOffset, inSize)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			maybe.PushError(useGasNegative(ctx.Gas, gas))
 			// todo: we ignore memory read cost now
 			// store prev ctx
@@ -1053,14 +1056,16 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case RETURN: // 0xF3
 			maybe.PushError(useGasNegative(ctx.Gas, GasZero))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
-			output, _ := memory.Read(offset, size)
+			output, memoryGas := memory.Read(offset, size)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			return output, maybe.Error()
 
 		case REVERT: // 0xFD
 			maybe.PushError(useGasNegative(ctx.Gas, GasZero))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
-			output, _ := memory.Read(offset, size)
+			output, memoryGas := memory.Read(offset, size)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			maybe.PushError(errors.ExecutionReverted)
 			return output, maybe.Error()
