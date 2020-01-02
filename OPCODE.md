@@ -52,6 +52,7 @@
 - NUMBER
 - DIFFICULTY
 - GASLIMIT
+- SELFBALANCE
 
 ## 2. 部分测试
 
@@ -60,7 +61,6 @@
 
 ## 3. 尚未测试
 
-- SELFBALANCE
 - STOP
 - SIGNEXTEND
 - SHA3
