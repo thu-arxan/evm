@@ -35,7 +35,9 @@ func TestBlockInfoSol(t *testing.T) {
 	callInfo(t, memoryDB, bc, origin, "getTimestamp", nil, nil, 247)
 	callInfo(t, memoryDB, bc, origin, "getNumber", nil, nil, 312)
 	callInfo(t, memoryDB, bc, origin, "getDifficulty", nil, nil, 246)
-	callInfo(t, memoryDB, bc, origin, "getGaslimit", nil, nil, 291)
+	callInfo(t, memoryDB, bc, origin, "getGaslimit", nil, nil, 313)
+	callInfo(t, memoryDB, bc, origin, "getChainID", nil, nil, 304)
+
 }
 
 func callInfo(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address,  funcName string, inputs, excepts []string, gasCost uint64) {
