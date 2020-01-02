@@ -28,6 +28,14 @@ func TestBlockInfoSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	blockInfoCode, blockInfoAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, "", 0)
 	callInfo(t, memoryDB, bc, origin, "getAddress", nil, nil, 281)
+	callInfo(t, memoryDB, bc, origin, "getBalance", nil, nil, 228)
+	callInfo(t, memoryDB, bc, origin, "getOrigin", nil, nil, 302)
+	callInfo(t, memoryDB, bc, origin, "getGasprice", nil, nil, 224)
+	callInfo(t, memoryDB, bc, origin, "getCoinbase", nil, nil, 280)
+	callInfo(t, memoryDB, bc, origin, "getTimestamp", nil, nil, 247)
+	callInfo(t, memoryDB, bc, origin, "getNumber", nil, nil, 312)
+	callInfo(t, memoryDB, bc, origin, "getDifficulty", nil, nil, 246)
+	callInfo(t, memoryDB, bc, origin, "getGaslimit", nil, nil, 291)
 }
 
 func callInfo(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address,  funcName string, inputs, excepts []string, gasCost uint64) {
