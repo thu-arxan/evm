@@ -70,6 +70,8 @@ const (
 	NUMBER
 	DIFFICULTY
 	GASLIMIT
+	CHAINID
+	SELFBALANCE
 )
 
 // 50s: Stack, Memory, Storage and Flow Operations

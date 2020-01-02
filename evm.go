@@ -655,6 +655,15 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			stack.PushUint64(ctx.GasLimit)
 			log.Debugf("=> %v\n", ctx.GasLimit)
 
+		case CHAINID: // 0x46
+			log.Debugf("Not implemented")
+
+		case SELFBALANCE: // 0x47
+			maybe.PushError(useGasNegative(ctx.Gas, GasLow))
+			balance := evm.getAccount(maybe, callee).GetBalance()
+			stack.PushUint64(balance)
+			log.Debugf("=> %v (%v)\n", balance, callee)
+
 		case POP: // 0x50
 			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
 			popped := stack.Pop()
