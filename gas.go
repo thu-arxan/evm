@@ -41,6 +41,8 @@ const (
 	GasQuadDivisor   uint64 = 20
 	GasCreateData    uint64 = 200
 
+	GasCallNewAccount uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
+
 	// EIP2200 changes many things of Sstore
 	GasSstoreSentryEIP2200      uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed
 	GasSstoreNoopEIP2200        uint64 = 800   // Once per SSTORE operation if the value doesn't change.

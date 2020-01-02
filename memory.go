@@ -29,7 +29,7 @@ type Memory interface {
 	//
 	// The value returned should be copy of any underlying memory, not a reference
 	// to the underlying store.
-	Read(offset, length *big.Int) []byte
+	Read(offset, length *big.Int) (value []byte, gasCost uint64)
 	// Write a value to the memory starting at offset (the index of the first byte
 	// written will equal offset). The value is provided as bytes to be written
 	// consecutively to the memory store. Return an error if the memory cannot be
@@ -68,23 +68,26 @@ type dynamicMemory struct {
 }
 
 // Read is the implementation of Memory
-func (mem *dynamicMemory) Read(offset, length *big.Int) []byte {
+func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 	// Ensures positive and not too wide
 	if !offset.IsUint64() {
 		mem.pushErr(fmt.Errorf("offset %v does not fit inside an unsigned 64-bit integer", offset))
-		return nil
+		return nil, 0
 	}
 	// Ensures positive and not too wide
 	if !length.IsUint64() {
 		mem.pushErr(fmt.Errorf("length %v does not fit inside an unsigned 64-bit integer", offset))
-		return nil
+		return nil, 0
 	}
 	output, err := mem.read(offset.Uint64(), length.Uint64())
 	if err != nil {
 		mem.pushErr(err)
-		return nil
+		return nil, 0
 	}
-	return output
+	size := uint64(len(mem.slice)+31) / 32
+	prevGasCost := mem.prevGasCost
+	mem.prevGasCost = GasMemory*size + (size*size)/512
+	return output, mem.prevGasCost - prevGasCost
 }
 
 // Write is the implementation of Memory
