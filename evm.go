@@ -656,6 +656,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> %v\n", ctx.GasLimit)
 
 		case CHAINID: // 0x46
+			maybe.PushError(useGasNegative(ctx.Gas, GasBase))
+			stack.Push(core.Word256{})
 			log.Debugf("Not implemented")
 
 		case SELFBALANCE: // 0x47
