@@ -52,4 +52,6 @@ func callInfo(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address,  f
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
+	t.Log(output)
+	t.Log(gasQuota - gas)
 }
