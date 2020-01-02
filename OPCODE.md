@@ -60,6 +60,7 @@
 
 ## 3. 尚未测试
 
+- SELFBALANCE
 - STOP
 - SIGNEXTEND
 - SHA3
