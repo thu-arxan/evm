@@ -31,7 +31,6 @@ func TestMathSol(t *testing.T) {
 	mathCode, mathAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 246938)
 	// then call the contract with chaos function
 	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 53957, 30000)
-
 }
 
 // you can set gasCost to 0 if you do not want to compare gasCost
