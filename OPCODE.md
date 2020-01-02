@@ -53,6 +53,7 @@
 - DIFFICULTY
 - GASLIMIT
 - SELFBALANCE
+- CHAINID
 
 ## 2. 部分测试
 
@@ -63,7 +64,6 @@
 ## 3. 尚未测试
 
 - BALANCE
-- CHAINID
 - STOP
 - SIGNEXTEND
 - SHA3
