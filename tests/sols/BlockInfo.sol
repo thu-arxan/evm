@@ -29,4 +29,11 @@ contract SimpleBlock {
     function getGaslimit() public view returns (uint) {
         return block.gaslimit;
     }
+    function getChainID() external view returns (uint256) {
+        uint256 id;
+        assembly {
+            id := chainid()
+        }
+        return id;
+    }
 }
