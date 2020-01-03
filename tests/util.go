@@ -3,7 +3,10 @@ package tests
 import (
 	"evm"
 	"evm/abi"
+	"evm/eabi"
 	"fmt"
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -36,6 +39,7 @@ func deployContract(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Addre
 
 func call(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contract evm.Address, abiFile, funcName string, inputs, excepts []string, gasCost, refund uint64) {
 	payload, err := abi.GetPayloadBytes(abiFile, funcName, inputs)
+	fmt.Printf("payload is %x\n", payload)
 	require.NoError(t, err)
 	var gasQuota uint64 = 100000
 	var gas = gasQuota
@@ -57,4 +61,33 @@ func call(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contract evm.Addre
 		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
 	}
 	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
+}
+
+func callWithPayload(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contract evm.Address, payload []byte, gasCost, refund uint64) {
+	var gasQuota uint64 = 100000
+	var gas = gasQuota
+	vm := evm.New(bc, db, &evm.Context{
+		Input: payload,
+		Value: 0,
+		Gas:   &gas,
+	})
+	code := db.GetAccount(contract).GetCode()
+	_, err := vm.Call(caller, contract, code)
+	require.NoError(t, err)
+	if gasCost != 0 {
+		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
+	}
+	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
+}
+
+func parseABI(abiFile string) eabi.ABI {
+	data, err := ioutil.ReadFile(abiFile)
+	if err != nil {
+		panic(err)
+	}
+	abi, err := eabi.JSON(strings.NewReader(string(data)))
+	if err != nil {
+		panic(err)
+	}
+	return abi
 }

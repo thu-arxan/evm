@@ -89,6 +89,13 @@ func HexToBytes(s string) ([]byte, error) {
 	return hex.DecodeString(s)
 }
 
+// Hex2Bytes returns the bytes represented by the hexadecimal string str.
+// Note: The function is a wrapper of hex.DecodeString, but it ignore the error.
+func Hex2Bytes(str string) []byte {
+	h, _ := hex.DecodeString(str)
+	return h
+}
+
 // RandNum return int in [0, max)
 func RandNum(max int) int {
 	rand.Seed(time.Now().UnixNano())

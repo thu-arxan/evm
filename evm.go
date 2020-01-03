@@ -7,6 +7,7 @@ import (
 
 	"evm/core"
 	"evm/errors"
+	"evm/precompile"
 	"evm/util"
 
 	"evm/crypto"
@@ -23,6 +24,7 @@ const (
 
 func init() {
 	log.SetLevel(log.DEBUG)
+	log.SetPrefix("")
 }
 
 // EVM is the evm
@@ -114,10 +116,22 @@ func (evm *EVM) CallWithoutTransfer(caller, callee Address, code []byte) (output
 	if evm.origin == nil {
 		evm.origin = caller
 	}
-	output, err = evm.callWithDepth(caller, callee, code)
-	if err != nil {
-		return
+	if precompile.IsPrecompile(callee.Bytes()) {
+		contract, err := precompile.New(callee.Bytes())
+		if err != nil {
+			return nil, err
+		}
+		if err := useGasNegative(evm.ctx.Gas, contract.RequiredGas(evm.ctx.Input)); err != nil {
+			return nil, err
+		}
+		output, err = contract.Run(evm.ctx.Input)
+	} else {
+		output, err = evm.callWithDepth(caller, callee, code)
+		if err != nil {
+			return
+		}
 	}
+
 	// sync change to db if no error
 	evm.cache.Sync()
 	return
@@ -469,7 +483,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SHA3: // 0x20
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
-			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3+GasSHA3Word*(size.Uint64()+31)/32))
+			maybe.PushError(useGasNegative(ctx.Gas, GasSHA3+GasSHA3Word*((size.Uint64()+31)/32)))
 			data, memoryGas := memory.Read(offset, size)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			data = crypto.Keccak256(data)
@@ -818,7 +832,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			data, memoryGas := memory.Read(offset, size)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			// TODO: Add test to test this
-			maybe.PushError(useGasNegative(ctx.Gas, GasLog+GasLogData*(size.Uint64()+31)/32+uint64(op-LOG0)*GasLogTopic))
+			maybe.PushError(useGasNegative(ctx.Gas, GasLog+GasLogData*((size.Uint64()+31)/32)+uint64(op-LOG0)*GasLogTopic))
 			evm.cache.AddLog(&Log{
 				Address: callee,
 				Topics:  topics,
@@ -901,7 +915,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			input, memoryGas := memory.Read(inOffset, inSize)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			maybe.PushError(useGasNegative(ctx.Gas, gas))
-			// todo: we ignore memory read cost now
 			// store prev ctx
 			prevInput := evm.ctx.Input
 			prevValue := evm.ctx.Value
@@ -910,6 +923,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Input = input
 			ctx.Value = value
 			ctx.Gas = &gas
+			log.Debugf("=> %v\n", target.Bytes())
 			returnData, err = evm.Call(callee, target, evm.getAccount(maybe, target).GetCode())
 			if err != nil {
 				stack.Push(core.Zero256)
@@ -925,7 +939,46 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			*prevGas += *ctx.Gas
 			ctx.Gas = prevGas
 
-		case CALLCODE, DELEGATECALL, STATICCALL: // 0xF1, 0xF2, 0xF4, 0xFA
+		case STATICCALL:
+			returnData = nil
+
+			var err error
+			maybe.PushError(useGasNegative(ctx.Gas, GasCall))
+
+			var gas = stack.PopUint64()
+			gas = callGas(*ctx.Gas, gas)
+
+			target := stack.PopAddress()
+			inOffset, inSize := stack.PopBigInt(), stack.PopBigInt()
+			retOffset, retSize := stack.PopBigInt(), stack.PopUint64()
+			input, memoryGas := memory.Read(inOffset, inSize)
+			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
+			maybe.PushError(useGasNegative(ctx.Gas, gas))
+			// store prev ctx
+			prevInput := evm.ctx.Input
+			prevValue := evm.ctx.Value
+			prevGas := evm.ctx.Gas
+			// update ctx
+			ctx.Input = input
+			ctx.Value = 0
+			ctx.Gas = &gas
+			log.Debugf("=> %v\n", target.Bytes())
+			returnData, err = evm.CallWithoutTransfer(callee, target, evm.getAccount(maybe, target).GetCode())
+			if err != nil {
+				stack.Push(core.Zero256)
+			} else {
+				stack.Push(core.One256)
+			}
+			if err == nil || err.Error() == errors.ExecutionReverted.Error() {
+				memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
+			}
+			// restore ctx
+			ctx.Input = prevInput
+			ctx.Value = prevValue
+			*prevGas += *ctx.Gas
+			ctx.Gas = prevGas
+
+		case CALLCODE, DELEGATECALL: // 0xF1, 0xF2, 0xF4, 0xFA
 			// todo: gas usage
 			returnData = nil
 
