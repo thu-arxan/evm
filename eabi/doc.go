@@ -1,5 +1,4 @@
-
-// Package abi implements the Ethereum ABI (Application Binary
+// Package eabi implements the Ethereum ABI (Application Binary
 // Interface).
 //
 // The Ethereum ABI is strongly typed, known at compile time
