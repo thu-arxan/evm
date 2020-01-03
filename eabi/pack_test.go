@@ -1,31 +1,14 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package eabi
 
 import (
 	"bytes"
+	"evm/core"
 	"evm/util"
 	"math"
 	"math/big"
 	"reflect"
 	"strings"
 	"testing"
-
-	"github.com/ethereum/go-ethereum/common"
 )
 
 func TestPack(t *testing.T) {
@@ -356,13 +339,13 @@ func TestPack(t *testing.T) {
 		{
 			"address[]",
 			nil,
-			[]common.Address{{1}, {2}},
+			[]core.Address{{1}, {2}},
 			util.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000200000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000"),
 		},
 		{
 			"bytes32[]",
 			nil,
-			[]common.Hash{{1}, {2}},
+			[]core.Hash{{1}, {2}},
 			util.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000201000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000000000000000000000000000"),
 		},
 		{
@@ -403,7 +386,7 @@ func TestPack(t *testing.T) {
 		{
 			"bytes32[][]",
 			nil,
-			[][]common.Hash{{{1}, {2}}, {{3}, {4}, {5}}},
+			[][]core.Hash{{{1}, {2}}, {{3}, {4}, {5}}},
 			util.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000002" + // len(array) = 2
 				"0000000000000000000000000000000000000000000000000000000000000040" + // offset 64 to i = 0
 				"00000000000000000000000000000000000000000000000000000000000000a0" + // offset 160 to i = 1
@@ -419,7 +402,7 @@ func TestPack(t *testing.T) {
 		{
 			"bytes32[][2]",
 			nil,
-			[][]common.Hash{{{1}, {2}}, {{3}, {4}, {5}}},
+			[][]core.Hash{{{1}, {2}}, {{3}, {4}, {5}}},
 			util.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000040" + // offset 64 to i = 0
 				"00000000000000000000000000000000000000000000000000000000000000a0" + // offset 160 to i = 1
 				"0000000000000000000000000000000000000000000000000000000000000002" + // len(array[0]) = 2
@@ -434,7 +417,7 @@ func TestPack(t *testing.T) {
 		{
 			"bytes32[3][2]",
 			nil,
-			[][]common.Hash{{{1}, {2}, {3}}, {{3}, {4}, {5}}},
+			[][]core.Hash{{{1}, {2}, {3}}, {{3}, {4}, {5}}},
 			util.Hex2Bytes("0100000000000000000000000000000000000000000000000000000000000000" + // array[0][0]
 				"0200000000000000000000000000000000000000000000000000000000000000" + // array[0][1]
 				"0300000000000000000000000000000000000000000000000000000000000000" + // array[0][2]
@@ -457,8 +440,8 @@ func TestPack(t *testing.T) {
 				B *big.Int
 				C *big.Int
 				D bool
-				E [][]common.Hash
-			}{1, big.NewInt(1), big.NewInt(-1), true, [][]common.Hash{{{1}, {2}, {3}}, {{3}, {4}, {5}}}},
+				E [][]core.Hash
+			}{1, big.NewInt(1), big.NewInt(-1), true, [][]core.Hash{{{1}, {2}, {3}}, {{3}, {4}, {5}}}},
 			util.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001" + // struct[a]
 				"0000000000000000000000000000000000000000000000000000000000000001" + // struct[b]
 				"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + // struct[c]
@@ -487,8 +470,8 @@ func TestPack(t *testing.T) {
 				C      []byte
 				D      []string
 				E      []*big.Int
-				F      []common.Address
-			}{"foobar", 1, []byte{1}, []string{"foo", "bar"}, []*big.Int{big.NewInt(1), big.NewInt(-1)}, []common.Address{{1}, {2}}},
+				F      []core.Address
+			}{"foobar", 1, []byte{1}, []string{"foo", "bar"}, []*big.Int{big.NewInt(1), big.NewInt(-1)}, []core.Address{{1}, {2}}},
 			util.Hex2Bytes("00000000000000000000000000000000000000000000000000000000000000c0" + // struct[a] offset
 				"0000000000000000000000000000000000000000000000000000000000000001" + // struct[b]
 				"0000000000000000000000000000000000000000000000000000000000000100" + // struct[c] offset
@@ -510,8 +493,8 @@ func TestPack(t *testing.T) {
 				"0000000000000000000000000000000000000000000000000000000000000001" + // 1
 				"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + // -1
 				"0000000000000000000000000000000000000000000000000000000000000002" + // struct[f] length
-				"0000000000000000000000000100000000000000000000000000000000000000" + // common.Address{1}
-				"0000000000000000000000000200000000000000000000000000000000000000"), // common.Address{2}
+				"0000000000000000000000000100000000000000000000000000000000000000" + // core.Address{1}
+				"0000000000000000000000000200000000000000000000000000000000000000"), // core.Address{2}
 		},
 		{
 			// nested tuple
@@ -636,8 +619,8 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig := abi.Methods["slice"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
 
 	packed, err := abi.Pack("slice", []uint32{1, 2})
 	if err != nil {
@@ -648,14 +631,14 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrA, addrB = common.Address{1}, common.Address{2}
+	var addrA, addrB = core.Address{1}, core.Address{2}
 	sig = abi.Methods["sliceAddress"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{32}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes(addrA[:], 32)...)
-	sig = append(sig, common.LeftPadBytes(addrB[:], 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{32}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes(addrA[:], 32)...)
+	sig = append(sig, util.LeftPadBytes(addrB[:], 32)...)
 
-	packed, err = abi.Pack("sliceAddress", []common.Address{addrA, addrB})
+	packed, err = abi.Pack("sliceAddress", []core.Address{addrA, addrB})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -663,18 +646,18 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrC, addrD = common.Address{3}, common.Address{4}
+	var addrC, addrD = core.Address{3}, core.Address{4}
 	sig = abi.Methods["sliceMultiAddress"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{64}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{160}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes(addrA[:], 32)...)
-	sig = append(sig, common.LeftPadBytes(addrB[:], 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes(addrC[:], 32)...)
-	sig = append(sig, common.LeftPadBytes(addrD[:], 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{64}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{160}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes(addrA[:], 32)...)
+	sig = append(sig, util.LeftPadBytes(addrB[:], 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes(addrC[:], 32)...)
+	sig = append(sig, util.LeftPadBytes(addrD[:], 32)...)
 
-	packed, err = abi.Pack("sliceMultiAddress", []common.Address{addrA, addrB}, []common.Address{addrC, addrD})
+	packed, err = abi.Pack("sliceMultiAddress", []core.Address{addrA, addrB}, []core.Address{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -683,8 +666,8 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig = abi.Methods["slice256"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
 
 	packed, err = abi.Pack("slice256", []*big.Int{big.NewInt(1), big.NewInt(2)})
 	if err != nil {
@@ -697,15 +680,15 @@ func TestMethodPack(t *testing.T) {
 
 	a := [2][2]*big.Int{{big.NewInt(1), big.NewInt(1)}, {big.NewInt(2), big.NewInt(0)}}
 	sig = abi.Methods["nestedArray"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0xa0}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes(addrC[:], 32)...)
-	sig = append(sig, common.LeftPadBytes(addrD[:], 32)...)
-	packed, err = abi.Pack("nestedArray", a, []common.Address{addrC, addrD})
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0xa0}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes(addrC[:], 32)...)
+	sig = append(sig, util.LeftPadBytes(addrD[:], 32)...)
+	packed, err = abi.Pack("nestedArray", a, []core.Address{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -714,13 +697,13 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig = abi.Methods["nestedArray2"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{0x20}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0x40}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0x80}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x20}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x40}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x80}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
 	packed, err = abi.Pack("nestedArray2", [2][]uint8{{1}, {1}})
 	if err != nil {
 		t.Fatal(err)
@@ -730,16 +713,16 @@ func TestMethodPack(t *testing.T) {
 	}
 
 	sig = abi.Methods["nestedSlice"].ID()
-	sig = append(sig, common.LeftPadBytes([]byte{0x20}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0x02}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0x40}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{0xa0}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{1}, 32)...)
-	sig = append(sig, common.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x20}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x02}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0x40}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{0xa0}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{1}, 32)...)
+	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
 	packed, err = abi.Pack("nestedSlice", [][]uint8{{1, 2}, {1, 2}})
 	if err != nil {
 		t.Fatal(err)
