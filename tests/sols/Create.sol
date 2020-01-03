@@ -3,7 +3,7 @@ pragma solidity ^0.6.0;
 contract Bakery {
     address[] public contracts;
 
-    function getContractCount() public constant returns(uint contractCount) {
+    function getContractCount() public view returns(uint contractCount) {
         returns contracts.length;
     }
 
@@ -15,7 +15,7 @@ contract Bakery {
 }
 
 contract Cookie {
-    function getFlavor() public constant returns (string flavor) {
+    function getFlavor() public view returns (string flavor) {
         return "chocolate chip";
     }
 }
