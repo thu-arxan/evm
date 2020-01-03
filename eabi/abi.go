@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
+	"strings"
 )
 
 // The ABI holds information about a contract's context and available
@@ -14,6 +16,15 @@ type ABI struct {
 	Constructor Method
 	Methods     map[string]Method
 	Events      map[string]Event
+}
+
+// New will construct abi from abi file
+func New(abiFile string) (ABI, error) {
+	data, err := ioutil.ReadFile(abiFile)
+	if err != nil {
+		return ABI{}, err
+	}
+	return JSON(strings.NewReader(string(data)))
 }
 
 // JSON returns a parsed ABI interface and error if it failed.

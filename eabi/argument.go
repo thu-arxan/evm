@@ -15,8 +15,10 @@ type Argument struct {
 	Indexed bool // indexed is only used by events
 }
 
+// Arguments is the slice of Argument
 type Arguments []Argument
 
+// ArgumentMarshaling is the marshal struct of Argument
 type ArgumentMarshaling struct {
 	Name         string
 	Type         string
@@ -76,9 +78,8 @@ func (arguments Arguments) Unpack(v interface{}, data []byte) error {
 	if len(data) == 0 {
 		if len(arguments) != 0 {
 			return fmt.Errorf("abi: attempting to unmarshall an empty string while arguments are expected")
-		} else {
-			return nil // Nothing to unmarshal, return
 		}
+		return nil // Nothing to unmarshal, return
 	}
 	// make sure the passed value is arguments pointer
 	if reflect.Ptr != reflect.ValueOf(v).Kind() {
@@ -99,9 +100,8 @@ func (arguments Arguments) UnpackIntoMap(v map[string]interface{}, data []byte) 
 	if len(data) == 0 {
 		if len(arguments) != 0 {
 			return fmt.Errorf("abi: attempting to unmarshall an empty string while arguments are expected")
-		} else {
-			return nil // Nothing to unmarshal, return
 		}
+		return nil // Nothing to unmarshal, return
 	}
 	marshalledValues, err := arguments.UnpackValues(data)
 	if err != nil {
