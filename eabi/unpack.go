@@ -18,6 +18,7 @@ package eabi
 
 import (
 	"encoding/binary"
+	"evm/core"
 	"evm/util/math"
 	"fmt"
 	"math/big"
@@ -233,8 +234,9 @@ func toGoType(index int, t Type, output []byte) (interface{}, error) {
 		return ReadInteger(t.T, t.Kind, returnOutput), nil
 	case BoolTy:
 		return readBool(returnOutput)
-	// case AddressTy:
-	// 	return common.BytesToAddress(returnOutput), nil
+	case AddressTy:
+		// todo: support other kind of address
+		return core.AddressFromBytes(returnOutput), nil
 	// case HashTy:
 	// 	return common.BytesToHash(returnOutput), nil
 	case BytesTy:

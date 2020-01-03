@@ -1,6 +1,8 @@
 package eabi
 
-import "errors"
+import (
+	"reflect"
+)
 
 // This file provide a function which allow user define the address unpack they need.
 
@@ -11,17 +13,23 @@ var (
 
 // SetAddressParser set address length and toString function
 // If length > 20, something may be lost while running
-func SetAddressParser(length int, toString func([]byte) string) error {
-	if length <= 0 || length > 20 {
-		return errors.New("length should belong to (0,20]")
-	}
-	addressLength = length
-	addressToString = toString
-	return nil
-}
+// func SetAddressParser(length int, toString func([]byte) string) error {
+// 	if length <= 0 || length > 20 {
+// 		return errors.New("length should belong to (0,20]")
+// 	}
+// 	addressLength = length
+// 	addressToString = toString
+// 	return nil
+// }
 
 // ResetAddressParser reset to default
-func ResetAddressParser() {
-	addressLength = 20
-	addressToString = nil
+// func ResetAddressParser() {
+// 	addressLength = 20
+// 	addressToString = nil
+// }
+
+// SetAddressParser set address reflect type and its length
+func SetAddressParser(t reflect.Type, length int) {
+	addressT = t
+	addressLength = length
 }

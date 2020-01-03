@@ -1,4 +1,3 @@
-
 package eabi
 
 import (
@@ -10,8 +9,11 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/crypto"
+	"github.com/stretchr/testify/require"
+
+	"evm/core"
+	"evm/crypto"
+	"evm/util"
 )
 
 const jsondata = `
@@ -239,6 +241,7 @@ func TestMultiPack(t *testing.T) {
 	}
 }
 
+// ExampleJSON is the example
 func ExampleJSON() {
 	const definition = `[{"constant":true,"inputs":[{"name":"","type":"address"}],"name":"isBar","outputs":[{"name":"","type":"bool"}],"type":"function"}]`
 
@@ -246,7 +249,11 @@ func ExampleJSON() {
 	if err != nil {
 		panic(err)
 	}
-	out, err := abi.Pack("isBar", common.HexToAddress("01"))
+	address, err := core.HexToAddress("01")
+	if err != nil {
+		panic(address)
+	}
+	out, err := abi.Pack("isBar", address)
 	if err != nil {
 		panic(err)
 	}
@@ -279,7 +286,7 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset[31] = 32
 	length := make([]byte, 32)
 	length[31] = byte(len(strin))
-	value := common.RightPadBytes([]byte(strin), 32)
+	value := util.RightPadBytes([]byte(strin), 32)
 	exp := append(offset, append(length, value...)...)
 
 	// ignore first 4 bytes of the output. This is the function identifier
@@ -311,13 +318,13 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 := make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 := common.RightPadBytes([]byte(str1), 32)
+	value1 := util.RightPadBytes([]byte(str1), 32)
 
 	offset2 := make([]byte, 32)
 	offset2[31] = 128
 	length2 := make([]byte, 32)
 	length2[31] = byte(len(str2))
-	value2 := common.RightPadBytes([]byte(str2), 32)
+	value2 := util.RightPadBytes([]byte(str2), 32)
 
 	exp2 := append(offset1, offset2...)
 	exp2 = append(exp2, append(length1, value1...)...)
@@ -340,7 +347,7 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 = make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 = common.RightPadBytes([]byte(str1), 64)
+	value1 = util.RightPadBytes([]byte(str1), 64)
 	offset2[31] = 160
 
 	exp2 = append(offset1, offset2...)
@@ -365,13 +372,13 @@ func TestInputVariableInputLength(t *testing.T) {
 	offset1[31] = 64
 	length1 = make([]byte, 32)
 	length1[31] = byte(len(str1))
-	value1 = common.RightPadBytes([]byte(str1), 64)
+	value1 = util.RightPadBytes([]byte(str1), 64)
 
 	offset2 = make([]byte, 32)
 	offset2[31] = 160
 	length2 = make([]byte, 32)
 	length2[31] = byte(len(str2))
-	value2 = common.RightPadBytes([]byte(str2), 64)
+	value2 = util.RightPadBytes([]byte(str2), 64)
 
 	exp2 = append(offset1, offset2...)
 	exp2 = append(exp2, append(length1, value1...)...)
@@ -411,9 +418,9 @@ func TestInputFixedArrayAndVariableInputLength(t *testing.T) {
 	offset[31] = 96
 	length := make([]byte, 32)
 	length[31] = byte(len(strin))
-	strvalue := common.RightPadBytes([]byte(strin), 32)
-	arrinvalue1 := common.LeftPadBytes(arrin[0].Bytes(), 32)
-	arrinvalue2 := common.LeftPadBytes(arrin[1].Bytes(), 32)
+	strvalue := util.RightPadBytes([]byte(strin), 32)
+	arrinvalue1 := util.LeftPadBytes(arrin[0].Bytes(), 32)
+	arrinvalue2 := util.LeftPadBytes(arrin[1].Bytes(), 32)
 	exp := append(offset, arrinvalue1...)
 	exp = append(exp, arrinvalue2...)
 	exp = append(exp, append(length, strvalue...)...)
@@ -437,9 +444,9 @@ func TestInputFixedArrayAndVariableInputLength(t *testing.T) {
 	offset[31] = 96
 	length = make([]byte, 32)
 	length[31] = byte(len(strin))
-	strvalue = common.RightPadBytes([]byte(strin), 32)
-	arrinvalue1 = common.LeftPadBytes(arrin[0].Bytes(), 32)
-	arrinvalue2 = common.LeftPadBytes(arrin[1].Bytes(), 32)
+	strvalue = util.RightPadBytes([]byte(strin), 32)
+	arrinvalue1 = util.LeftPadBytes(arrin[0].Bytes(), 32)
+	arrinvalue2 = util.LeftPadBytes(arrin[1].Bytes(), 32)
 	exp = append(offset, arrinvalue1...)
 	exp = append(exp, arrinvalue2...)
 	exp = append(exp, append(length, strvalue...)...)
@@ -464,16 +471,16 @@ func TestInputFixedArrayAndVariableInputLength(t *testing.T) {
 	stroffset[31] = 128
 	strlength := make([]byte, 32)
 	strlength[31] = byte(len(strin))
-	strvalue = common.RightPadBytes([]byte(strin), 32)
-	fixedarrinvalue1 := common.LeftPadBytes(fixedarrin[0].Bytes(), 32)
-	fixedarrinvalue2 := common.LeftPadBytes(fixedarrin[1].Bytes(), 32)
+	strvalue = util.RightPadBytes([]byte(strin), 32)
+	fixedarrinvalue1 := util.LeftPadBytes(fixedarrin[0].Bytes(), 32)
+	fixedarrinvalue2 := util.LeftPadBytes(fixedarrin[1].Bytes(), 32)
 	dynarroffset := make([]byte, 32)
 	dynarroffset[31] = byte(160 + ((len(strin)/32)+1)*32)
 	dynarrlength := make([]byte, 32)
 	dynarrlength[31] = byte(len(dynarrin))
-	dynarrinvalue1 := common.LeftPadBytes(dynarrin[0].Bytes(), 32)
-	dynarrinvalue2 := common.LeftPadBytes(dynarrin[1].Bytes(), 32)
-	dynarrinvalue3 := common.LeftPadBytes(dynarrin[2].Bytes(), 32)
+	dynarrinvalue1 := util.LeftPadBytes(dynarrin[0].Bytes(), 32)
+	dynarrinvalue2 := util.LeftPadBytes(dynarrin[1].Bytes(), 32)
+	dynarrinvalue3 := util.LeftPadBytes(dynarrin[2].Bytes(), 32)
 	exp = append(stroffset, fixedarrinvalue1...)
 	exp = append(exp, fixedarrinvalue2...)
 	exp = append(exp, dynarroffset...)
@@ -503,12 +510,12 @@ func TestInputFixedArrayAndVariableInputLength(t *testing.T) {
 	stroffset[31] = 192
 	strlength = make([]byte, 32)
 	strlength[31] = byte(len(strin))
-	strvalue = common.RightPadBytes([]byte(strin), 32)
-	fixedarrin1value1 := common.LeftPadBytes(fixedarrin1[0].Bytes(), 32)
-	fixedarrin1value2 := common.LeftPadBytes(fixedarrin1[1].Bytes(), 32)
-	fixedarrin2value1 := common.LeftPadBytes(fixedarrin2[0].Bytes(), 32)
-	fixedarrin2value2 := common.LeftPadBytes(fixedarrin2[1].Bytes(), 32)
-	fixedarrin2value3 := common.LeftPadBytes(fixedarrin2[2].Bytes(), 32)
+	strvalue = util.RightPadBytes([]byte(strin), 32)
+	fixedarrin1value1 := util.LeftPadBytes(fixedarrin1[0].Bytes(), 32)
+	fixedarrin1value2 := util.LeftPadBytes(fixedarrin1[1].Bytes(), 32)
+	fixedarrin2value1 := util.LeftPadBytes(fixedarrin2[0].Bytes(), 32)
+	fixedarrin2value2 := util.LeftPadBytes(fixedarrin2[1].Bytes(), 32)
+	fixedarrin2value3 := util.LeftPadBytes(fixedarrin2[2].Bytes(), 32)
 	exp = append(stroffset, fixedarrin1value1...)
 	exp = append(exp, fixedarrin1value2...)
 	exp = append(exp, fixedarrin2value1...)
@@ -537,17 +544,17 @@ func TestInputFixedArrayAndVariableInputLength(t *testing.T) {
 	stroffset[31] = 224
 	strlength = make([]byte, 32)
 	strlength[31] = byte(len(strin))
-	strvalue = common.RightPadBytes([]byte(strin), 32)
-	fixedarrin1value1 = common.LeftPadBytes(fixedarrin1[0].Bytes(), 32)
-	fixedarrin1value2 = common.LeftPadBytes(fixedarrin1[1].Bytes(), 32)
+	strvalue = util.RightPadBytes([]byte(strin), 32)
+	fixedarrin1value1 = util.LeftPadBytes(fixedarrin1[0].Bytes(), 32)
+	fixedarrin1value2 = util.LeftPadBytes(fixedarrin1[1].Bytes(), 32)
 	dynarroffset = U256(big.NewInt(int64(256 + ((len(strin)/32)+1)*32)))
 	dynarrlength = make([]byte, 32)
 	dynarrlength[31] = byte(len(dynarrin))
-	dynarrinvalue1 = common.LeftPadBytes(dynarrin[0].Bytes(), 32)
-	dynarrinvalue2 = common.LeftPadBytes(dynarrin[1].Bytes(), 32)
-	fixedarrin2value1 = common.LeftPadBytes(fixedarrin2[0].Bytes(), 32)
-	fixedarrin2value2 = common.LeftPadBytes(fixedarrin2[1].Bytes(), 32)
-	fixedarrin2value3 = common.LeftPadBytes(fixedarrin2[2].Bytes(), 32)
+	dynarrinvalue1 = util.LeftPadBytes(dynarrin[0].Bytes(), 32)
+	dynarrinvalue2 = util.LeftPadBytes(dynarrin[1].Bytes(), 32)
+	fixedarrin2value1 = util.LeftPadBytes(fixedarrin2[0].Bytes(), 32)
+	fixedarrin2value2 = util.LeftPadBytes(fixedarrin2[1].Bytes(), 32)
+	fixedarrin2value3 = util.LeftPadBytes(fixedarrin2[2].Bytes(), 32)
 	exp = append(stroffset, fixedarrin1value1...)
 	exp = append(exp, fixedarrin1value2...)
 	exp = append(exp, dynarroffset...)
@@ -654,6 +661,7 @@ func TestBareEvents(t *testing.T) {
 //    }
 // When receive("X") is called with sender 0x00... and value 1, it produces this tx receipt:
 //   receipt{status=1 cgas=23949 bloom=00000000004000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000040200000000000000000000000000000000001000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000 logs=[log: b6818c8064f645cd82d99b59a1a267d6d61117ef [75fd880d39c1daf53b6547ab6cb59451fc6452d27caa90e5b6649dd8293b9eed] 000000000000000000000000376c47978271565f56deb45495afa69e59c16ab200000000000000000000000000000000000000000000000000000000000000010000000000000000000000000000000000000000000000000000000000000060000000000000000000000000000000000000000000000000000000000000000158 9ae378b6d4409eada347a5dc0c180f186cb62dc68fcc0f043425eb917335aa28 0 95d429d309bb9d753954195fe2d69bd140b4ae731b9b5b605c34323de162cf00 0]}
+
 func TestUnpackEvent(t *testing.T) {
 	const abiJSON = `[{"constant":false,"inputs":[{"name":"memo","type":"bytes"}],"name":"receive","outputs":[],"payable":true,"stateMutability":"payable","type":"function"},{"anonymous":false,"inputs":[{"indexed":false,"name":"sender","type":"address"},{"indexed":false,"name":"amount","type":"uint256"},{"indexed":false,"name":"memo","type":"bytes"}],"name":"received","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"name":"sender","type":"address"}],"name":"receivedAddr","type":"event"}]`
 	abi, err := JSON(strings.NewReader(abiJSON))
@@ -671,7 +679,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedEvent struct {
-		Sender common.Address
+		Sender core.Address
 		Amount *big.Int
 		Memo   []byte
 	}
@@ -683,7 +691,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedAddrEvent struct {
-		Sender common.Address
+		Sender core.Address
 	}
 	var receivedAddrEv ReceivedAddrEvent
 	err = abi.Unpack(&receivedAddrEv, "receivedAddr", data)
@@ -709,13 +717,15 @@ func TestUnpackEventIntoMap(t *testing.T) {
 	}
 
 	receivedMap := map[string]interface{}{}
+	sender, err := core.HexToAddress("0x376c47978271565f56DEB45495afa69E59c16Ab2")
+	require.NoError(t, err)
 	expectedReceivedMap := map[string]interface{}{
-		"sender": common.HexToAddress("0x376c47978271565f56DEB45495afa69E59c16Ab2"),
+		"sender": sender,
 		"amount": big.NewInt(1),
 		"memo":   []byte{88},
 	}
 	if err := abi.UnpackIntoMap(receivedMap, "received", data); err != nil {
-		t.Error(err)
+		require.NoError(t, err)
 	}
 	if len(receivedMap) != 3 {
 		t.Error("unpacked `received` map expected to have length 3")
@@ -853,8 +863,10 @@ func TestUnpackIntoMapNamingConflict(t *testing.T) {
 	if len(data)%32 == 0 {
 		t.Errorf("len(data) is %d, want a non-multiple of 32", len(data))
 	}
+	sender, err := core.HexToAddress("0x376c47978271565f56DEB45495afa69E59c16Ab2")
+	require.NoError(t, err)
 	expectedReceivedMap := map[string]interface{}{
-		"sender": common.HexToAddress("0x376c47978271565f56DEB45495afa69E59c16Ab2"),
+		"sender": sender,
 		"amount": big.NewInt(1),
 		"memo":   []byte{88},
 	}
@@ -906,7 +918,7 @@ func TestABI_MethodById(t *testing.T) {
 	}
 	for name, m := range abi.Methods {
 		a := fmt.Sprintf("%v", m)
-		m2, err := abi.MethodById(m.ID())
+		m2, err := abi.MethodByID(m.ID())
 		if err != nil {
 			t.Fatalf("Failed to look up ABI method: %v", err)
 		}
@@ -916,13 +928,13 @@ func TestABI_MethodById(t *testing.T) {
 		}
 	}
 	// Also test empty
-	if _, err := abi.MethodById([]byte{0x00}); err == nil {
+	if _, err := abi.MethodByID([]byte{0x00}); err == nil {
 		t.Errorf("Expected error, too short to decode data")
 	}
-	if _, err := abi.MethodById([]byte{}); err == nil {
+	if _, err := abi.MethodByID([]byte{}); err == nil {
 		t.Errorf("Expected error, too short to decode data")
 	}
-	if _, err := abi.MethodById(nil); err == nil {
+	if _, err := abi.MethodByID(nil); err == nil {
 		t.Errorf("Expected error, nil is short to decode data")
 	}
 }

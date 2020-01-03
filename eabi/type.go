@@ -223,7 +223,6 @@ func (t Type) pack(v reflect.Value) ([]byte, error) {
 	if err := typeCheck(t, v); err != nil {
 		return nil, err
 	}
-
 	switch t.T {
 	case SliceTy, ArrayTy:
 		var ret []byte
