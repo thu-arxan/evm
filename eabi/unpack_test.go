@@ -1,24 +1,9 @@
-// Copyright 2017 The go-ethereum Authors
-// This file is part of the go-ethereum library.
-//
-// The go-ethereum library is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-//
-// The go-ethereum library is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with the go-ethereum library. If not, see <http://www.gnu.org/licenses/>.
-
 package eabi
 
 import (
 	"bytes"
 	"encoding/hex"
+	"evm/core"
 	"evm/util"
 	"fmt"
 	"math/big"
@@ -27,7 +12,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common"
 	"github.com/stretchr/testify/require"
 )
 
@@ -129,7 +113,7 @@ var unpackTests = []unpackTest{
 	{
 		def:  `[{"type": "address"}]`,
 		enc:  "0000000000000000000000000100000000000000000000000000000000000000",
-		want: common.Address{1},
+		want: core.Address{1},
 	},
 	// Bytes
 	{
@@ -644,7 +628,9 @@ func TestMultiReturnWithStringArray(t *testing.T) {
 	buff.Write(util.Hex2Bytes("000000000000000000000000000000000000000000000000000000005c1b78ea0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000001a055690d9db80000000000000000000000000000ab1257528b3782fb40d7ed5f72e624b744dffb2f00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000008457468657265756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001048656c6c6f2c20457468657265756d2100000000000000000000000000000000"))
 	temp, _ := big.NewInt(0).SetString("30000000000000000000", 10)
 	ret1, ret1Exp := new([3]*big.Int), [3]*big.Int{big.NewInt(1545304298), big.NewInt(6), temp}
-	ret2, ret2Exp := new(common.Address), common.HexToAddress("ab1257528b3782fb40d7ed5f72e624b744dffb2f")
+	addr, err := core.HexToAddress("ab1257528b3782fb40d7ed5f72e624b744dffb2f")
+	require.NoError(t, err)
+	ret2, ret2Exp := new(core.Address), addr
 	ret3, ret3Exp := new([2]string), [2]string{"Ethereum", "Hello, Ethereum!"}
 	ret4, ret4Exp := new(bool), false
 	if err := abi.Unpack(&[]interface{}{ret1, ret2, ret3, ret4}, "multi", buff.Bytes()); err != nil {
@@ -873,13 +859,13 @@ func TestUnmarshal(t *testing.T) {
 	buff.Reset()
 	buff.Write(util.RightPadBytes([]byte("hello"), 32))
 
-	var hash common.Hash
+	var hash core.Hash
 	err = abi.Unpack(&hash, "fixed", buff.Bytes())
 	if err != nil {
 		t.Error(err)
 	}
 
-	helloHash := common.BytesToHash(util.RightPadBytes([]byte("hello"), 32))
+	helloHash := core.BytesToHash(util.RightPadBytes([]byte("hello"), 32))
 	if hash != helloHash {
 		t.Errorf("Expected %x to equal %x", hash, helloHash)
 	}
@@ -923,7 +909,7 @@ func TestUnmarshal(t *testing.T) {
 	buff.Write(util.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
 	buff.Write(util.Hex2Bytes("0000000000000000000000000100000000000000000000000000000000000000"))
 
-	var outAddr []common.Address
+	var outAddr []core.Address
 	err = abi.Unpack(&outAddr, "addressSliceSingle", buff.Bytes())
 	if err != nil {
 		t.Fatal("didn't expect error:", err)
@@ -933,8 +919,8 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddr))
 	}
 
-	if outAddr[0] != (common.Address{1}) {
-		t.Errorf("expected %x, got %x", common.Address{1}, outAddr[0])
+	if outAddr[0] != (core.Address{1}) {
+		t.Errorf("expected %x, got %x", core.Address{1}, outAddr[0])
 	}
 
 	// marshal multiple address slice
@@ -948,8 +934,8 @@ func TestUnmarshal(t *testing.T) {
 	buff.Write(util.Hex2Bytes("0000000000000000000000000300000000000000000000000000000000000000"))
 
 	var outAddrStruct struct {
-		A []common.Address
-		B []common.Address
+		A []core.Address
+		B []core.Address
 	}
 	err = abi.Unpack(&outAddrStruct, "addressSliceDouble", buff.Bytes())
 	if err != nil {
@@ -960,19 +946,19 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.A))
 	}
 
-	if outAddrStruct.A[0] != (common.Address{1}) {
-		t.Errorf("expected %x, got %x", common.Address{1}, outAddrStruct.A[0])
+	if outAddrStruct.A[0] != (core.Address{1}) {
+		t.Errorf("expected %x, got %x", core.Address{1}, outAddrStruct.A[0])
 	}
 
 	if len(outAddrStruct.B) != 2 {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.B))
 	}
 
-	if outAddrStruct.B[0] != (common.Address{2}) {
-		t.Errorf("expected %x, got %x", common.Address{2}, outAddrStruct.B[0])
+	if outAddrStruct.B[0] != (core.Address{2}) {
+		t.Errorf("expected %x, got %x", core.Address{2}, outAddrStruct.B[0])
 	}
-	if outAddrStruct.B[1] != (common.Address{3}) {
-		t.Errorf("expected %x, got %x", common.Address{3}, outAddrStruct.B[1])
+	if outAddrStruct.B[1] != (core.Address{3}) {
+		t.Errorf("expected %x, got %x", core.Address{3}, outAddrStruct.B[1])
 	}
 
 	// marshal invalid address slice
