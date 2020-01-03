@@ -330,6 +330,12 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 		switch t {
 		case "string":
 			a = v
+		case "bool":
+			if strings.ReplaceAll(v, "0", "") == "" || strings.ToLower(v) == "false" {
+				a = false
+			} else {
+				a = true
+			}
 		default:
 			if strings.HasPrefix(t, "uint") {
 				// todo: may be slice

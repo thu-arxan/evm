@@ -145,6 +145,11 @@ func TestTestBool(t *testing.T) {
 	if _, err := abi.Pack("bool", true); err != nil {
 		t.Error(err)
 	}
+
+	require.Equal(t, mustPack(abi, "bool", true), mustPackValues(abi, "bool", "true"))
+	require.Equal(t, mustPack(abi, "bool", true), mustPackValues(abi, "bool", "1"))
+	require.Equal(t, mustPack(abi, "bool", false), mustPackValues(abi, "bool", "false"))
+	require.Equal(t, mustPack(abi, "bool", false), mustPackValues(abi, "bool", "000"))
 }
 
 func TestTestSlice(t *testing.T) {
