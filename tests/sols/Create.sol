@@ -4,18 +4,18 @@ contract Bakery {
     address[] public contracts;
 
     function getContractCount() public view returns(uint contractCount) {
-        returns contracts.length;
+        return contracts.length;
     }
 
     function newCookie() public returns(address newContract) {
         Cookie c = new Cookie();
         contracts.push(c);
-        returns c;
+        return c;
     }
 }
 
 contract Cookie {
     function getFlavor() public view returns (string flavor) {
-        returns "chocolate chip";
+        return "chocolate chip";
     }
 }
