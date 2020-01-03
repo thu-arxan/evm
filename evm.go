@@ -897,7 +897,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				stack.PushAddress(newAccountAddress)
 			}
 
-		case CALL:
+		case CALL, CALLCODE:
 			returnData = nil
 
 			var err error
@@ -925,7 +925,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Value = value
 			ctx.Gas = &gasLimit
 			log.Debugf("=> %v\n", target.Bytes())
-			returnData, err = evm.Call(callee, target, evm.getAccount(maybe, target).GetCode())
+			if op == CALL {
+				returnData, err = evm.Call(callee, target, evm.getAccount(maybe, target).GetCode())
+			} else {
+				returnData, err = evm.Call(callee, callee, evm.getAccount(maybe, target).GetCode())
+			}
 			if err != nil {
 				stack.Push(core.Zero256)
 			} else {
@@ -941,6 +945,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Gas = prevGas
 
 		case STATICCALL:
+			// todo: read only mode
 			returnData = nil
 
 			var err error
@@ -979,7 +984,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			*prevGas += *ctx.Gas
 			ctx.Gas = prevGas
 
-		case CALLCODE, DELEGATECALL: // 0xF1, 0xF2, 0xF4, 0xFA
+		case DELEGATECALL: // 0xF1, 0xF2, 0xF4, 0xFA
 			// todo: gas usage
 			returnData = nil
 
