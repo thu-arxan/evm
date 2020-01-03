@@ -1,14 +1,12 @@
-
-
 package eabi
 
 import (
+	"evm/core"
 	"math/big"
 	"reflect"
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-	"github.com/ethereum/go-ethereum/common"
 )
 
 // typeWithoutStringer is a alias for the Type type which simply doesn't implement
@@ -72,8 +70,8 @@ func TestTypeRegexp(t *testing.T) {
 		{"string[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]string{}), Elem: &Type{Kind: reflect.String, Type: reflect.TypeOf(""), T: StringTy, stringKind: "string"}, stringKind: "string[]"}},
 		{"string[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]string{}), Elem: &Type{Kind: reflect.String, T: StringTy, Type: reflect.TypeOf(""), stringKind: "string"}, stringKind: "string[2]"}},
 		{"address", nil, Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}},
-		{"address[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]common.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
-		{"address[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]common.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
+		{"address[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]core.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
+		{"address[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]core.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
 		// TODO when fixed types are implemented properly
 		// {"fixed", nil, Type{}},
 		// {"fixed128x128", nil, Type{}},
@@ -197,10 +195,10 @@ func TestTypeCheck(t *testing.T) {
 		{"uint16[3]", nil, [4]uint16{1, 2, 3}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
 		{"uint16[3]", nil, []uint16{1, 2, 3}, ""},
 		{"uint16[3]", nil, []uint16{1, 2, 3, 4}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
-		{"address[]", nil, []common.Address{{1}}, ""},
-		{"address[1]", nil, []common.Address{{1}}, ""},
-		{"address[1]", nil, [1]common.Address{{1}}, ""},
-		{"address[2]", nil, [1]common.Address{{1}}, "abi: cannot use [1]array as type [2]array as argument"},
+		{"address[]", nil, []core.Address{{1}}, ""},
+		{"address[1]", nil, []core.Address{{1}}, ""},
+		{"address[1]", nil, [1]core.Address{{1}}, ""},
+		{"address[2]", nil, [1]core.Address{{1}}, "abi: cannot use [1]array as type [2]array as argument"},
 		{"bytes32", nil, [32]byte{}, ""},
 		{"bytes31", nil, [31]byte{}, ""},
 		{"bytes30", nil, [30]byte{}, ""},
@@ -234,20 +232,20 @@ func TestTypeCheck(t *testing.T) {
 		{"bytes2", nil, [2]byte{}, ""},
 		{"bytes1", nil, [1]byte{}, ""},
 		{"bytes32", nil, [33]byte{}, "abi: cannot use [33]uint8 as type [32]uint8 as argument"},
-		{"bytes32", nil, common.Hash{1}, ""},
-		{"bytes31", nil, common.Hash{1}, "abi: cannot use common.Hash as type [31]uint8 as argument"},
+		{"bytes32", nil, core.Hash{1}, ""},
+		{"bytes31", nil, core.Hash{1}, "abi: cannot use core.Hash as type [31]uint8 as argument"},
 		{"bytes31", nil, [32]byte{}, "abi: cannot use [32]uint8 as type [31]uint8 as argument"},
 		{"bytes", nil, []byte{0, 1}, ""},
 		{"bytes", nil, [2]byte{0, 1}, "abi: cannot use array as type slice as argument"},
-		{"bytes", nil, common.Hash{1}, "abi: cannot use array as type slice as argument"},
+		{"bytes", nil, core.Hash{1}, "abi: cannot use array as type slice as argument"},
 		{"string", nil, "hello world", ""},
 		{"string", nil, string(""), ""},
 		{"string", nil, []byte{}, "abi: cannot use slice as type string as argument"},
 		{"bytes32[]", nil, [][32]byte{{}}, ""},
 		{"function", nil, [24]byte{}, ""},
-		{"bytes20", nil, common.Address{}, ""},
+		{"bytes20", nil, core.Address{}, ""},
 		{"address", nil, [20]byte{}, ""},
-		{"address", nil, common.Address{}, ""},
+		{"address", nil, core.Address{}, ""},
 		{"bytes32[]]", nil, "", "invalid arg type in abi"},
 		{"invalidType", nil, "", "unsupported arg type: invalidType"},
 		{"invalidSlice[]", nil, "", "unsupported arg type: invalidSlice"},
