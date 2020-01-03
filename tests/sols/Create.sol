@@ -10,12 +10,12 @@ contract Bakery {
     function newCookie() public returns(address newContract) {
         Cookie c = new Cookie();
         contracts.push(c);
-        return c;
+        returns c;
     }
 }
 
 contract Cookie {
     function getFlavor() public view returns (string flavor) {
-        return "chocolate chip";
+        returns "chocolate chip";
     }
 }
