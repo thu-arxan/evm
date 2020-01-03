@@ -2,7 +2,6 @@ package evm
 
 import (
 	"bytes"
-	"fmt"
 	"math/big"
 
 	"evm/core"
@@ -911,7 +910,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			retOffset, retSize := stack.PopBigInt(), stack.PopUint64()
 			if value != 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.CallValue))
-				// todo: address is empty in eip158
+				// todo: address is empty in eip158, only CALL should support this
 			}
 			input, memoryGas := memory.Read(inOffset, inSize)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
@@ -944,8 +943,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			*prevGas += *ctx.Gas
 			ctx.Gas = prevGas
 
-		case STATICCALL:
-			// todo: read only mode
+		case STATICCALL, DELEGATECALL:
+			// todo: support read only mode of STATICCALL
 			returnData = nil
 
 			var err error
@@ -969,7 +968,12 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Value = 0
 			ctx.Gas = &gas
 			log.Debugf("=> %v\n", target.Bytes())
-			returnData, err = evm.CallWithoutTransfer(callee, target, evm.getAccount(maybe, target).GetCode())
+			if op == STATICCALL {
+				returnData, err = evm.CallWithoutTransfer(callee, target, evm.getAccount(maybe, target).GetCode())
+			} else {
+				returnData, err = evm.CallWithoutTransfer(caller, callee, evm.getAccount(maybe, target).GetCode())
+			}
+
 			if err != nil {
 				stack.Push(core.Zero256)
 			} else {
@@ -983,134 +987,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Value = prevValue
 			*prevGas += *ctx.Gas
 			ctx.Gas = prevGas
-
-		case DELEGATECALL: // 0xF1, 0xF2, 0xF4, 0xFA
-			// todo: gas usage
-			returnData = nil
-
-			gasLimit := stack.PopUint64()
-			target := stack.PopAddress()
-			value := ctx.Value
-			if op != DELEGATECALL && op != STATICCALL {
-				value = stack.PopUint64()
-			}
-			// inputs
-			inOffset, inSize := stack.PopBigInt(), stack.PopBigInt()
-			// outputs
-			retOffset := stack.PopBigInt()
-			retSize := stack.PopUint64()
-			log.Debugf("=> %v\n", target)
-
-			if !evm.cache.Exist(target) {
-				if op != CALL {
-					maybe.PushError(errors.UnknownAddress)
-					continue
-				}
-				// We're sending funds to a new account so we must create it first
-				if err := evm.createAccount(callee, target); err != nil {
-					maybe.PushError(err)
-					continue
-				}
-			}
-			acc := evm.getAccount(maybe, target)
-
-			// Ensure that gasLimit is reasonable
-			if *ctx.Gas < gasLimit {
-				// EIP150 - the 63/64 rule - rather than errors.CodedError we pass this specified fraction of the total available gas
-				gasLimit = *ctx.Gas - *ctx.Gas/64
-			}
-			// NOTE: we will return any used gas later.
-			*ctx.Gas -= gasLimit
-
-			// store prev ctx
-			prevInput := evm.ctx.Input
-			prevValue := evm.ctx.Value
-			prevGas := evm.ctx.Gas
-			// update ctx
-			ctx.Input, _ = memory.Read(inOffset, inSize)
-			ctx.Value = value
-			ctx.Gas = &gasLimit
-
-			var callErr error
-			// Set up the caller/callee context
-			switch op {
-			case CALL:
-				// Calls contract at target from this contract normally
-				// Value: transferred
-				// Caller: this contract
-				// Storage: target
-				// Code: from target
-				returnData, callErr = evm.Call(callee, target, acc.GetCode())
-
-			case STATICCALL:
-				// Calls contract at target from this contract with no state mutation
-				// Value: not transferred
-				// Caller: this contract
-				// Storage: target (read-only)
-				// Code: from target
-
-				// calleectx.CallType = exec.CallTypeStatic
-				returnData, callErr = evm.CallWithoutTransfer(callee, target, acc.GetCode())
-				// todo: support read only operation
-
-				// childState.CallFrame.ReadOnly()
-				// childState.EventSink = exec.NewLogFreeEventSink(childState.EventSink)
-
-			case CALLCODE:
-				// Calling this contract from itself as if it had the code at target
-				// Value: transferred
-				// Caller: this contract
-				// Storage: this contract
-				// Code: from target
-
-				returnData, callErr = evm.Call(callee, callee, acc.GetCode())
-
-			case DELEGATECALL:
-				// Calling this contract from the original caller as if it had the code at target
-				// Value: not transferred
-				// Caller: original caller
-				// Storage: this contract
-				// Code: from target
-
-				returnData, callErr = evm.CallWithoutTransfer(caller, callee, acc.GetCode())
-
-			default:
-				panic(fmt.Errorf("switch statement should be exhaustive so this should not have been reached"))
-			}
-			// recover ctx
-			ctx.Input = prevInput
-			ctx.Value = prevValue
-			ctx.Gas = prevGas
-
-			if callErr == nil {
-				// Sync error is a hard stop
-				// todo: This rely on a cache
-				// maybe.PushError(childState.CallFrame.Sync())
-			}
-
-			var gasCost uint64
-			// Push result
-			if callErr != nil {
-				// So we can return nested errors.CodedError if the top level return is an errors.CodedError
-				stack.Push(core.Zero256)
-
-				if callErr.Error() == errors.ExecutionReverted.Error() {
-					gasCost = memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
-				}
-			} else {
-				stack.Push(core.One256)
-
-				// Should probably only be necessary when there is no return value and
-				// returnData is empty, but since EVM expects retSize to be respected this will
-				// defensively pad or truncate the portion of returnData to be returned.
-				gasCost = memory.Write(retOffset, util.RightPadBytes(returnData, int(retSize)))
-			}
-
-			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
-			// Handle remaining gas.
-			*ctx.Gas += gasLimit
-
-			log.Debugf("resume %s (%v)\n", callee, ctx.Gas)
 
 		case RETURN: // 0xF3
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Zero))
