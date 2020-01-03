@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"evm/errors"
+	"evm/gas"
 )
 
 const (
@@ -86,7 +87,7 @@ func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 	}
 	size := uint64(len(mem.slice)+31) / 32
 	prevGasCost := mem.prevGasCost
-	mem.prevGasCost = GasMemory*size + (size*size)/512
+	mem.prevGasCost = gas.Memory*size + (size*size)/512
 	return output, mem.prevGasCost - prevGasCost
 }
 
@@ -103,7 +104,7 @@ func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 	}
 	size := uint64(len(mem.slice)+31) / 32
 	prevGasCost := mem.prevGasCost
-	mem.prevGasCost = GasMemory*size + (size*size)/512
+	mem.prevGasCost = gas.Memory*size + (size*size)/512
 	return mem.prevGasCost - prevGasCost
 }
 
