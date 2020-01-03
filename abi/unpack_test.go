@@ -1,4 +1,4 @@
-package eabi
+package abi
 
 import (
 	"bytes"

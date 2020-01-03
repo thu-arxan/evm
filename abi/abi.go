@@ -1,4 +1,4 @@
-package eabi
+package abi
 
 import (
 	"bytes"
@@ -60,6 +60,29 @@ func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 		return nil, fmt.Errorf("method '%s' not found", name)
 	}
 	arguments, err := method.Inputs.Pack(args...)
+	if err != nil {
+		return nil, err
+	}
+	// Pack up the method ID too if not a constructor and return
+	return append(method.ID(), arguments...), nil
+}
+
+// PackValues pack inputs which are construct without type
+func (abi ABI) PackValues(name string, inputs ...string) ([]byte, error) {
+	// Fetch the ABI of the requested method
+	if name == "" {
+		// constructor
+		arguments, err := abi.Constructor.Inputs.PackValues(inputs...)
+		if err != nil {
+			return nil, err
+		}
+		return arguments, nil
+	}
+	method, exist := abi.Methods[name]
+	if !exist {
+		return nil, fmt.Errorf("method '%s' not found", name)
+	}
+	arguments, err := method.Inputs.PackValues(inputs...)
 	if err != nil {
 		return nil, err
 	}

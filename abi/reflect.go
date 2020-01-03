@@ -1,6 +1,6 @@
 
 
-package eabi
+package abi
 
 import (
 	"fmt"

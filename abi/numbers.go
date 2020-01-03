@@ -1,5 +1,5 @@
 
-package eabi
+package abi
 
 import (
 	"math/big"

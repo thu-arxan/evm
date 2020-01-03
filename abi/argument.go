@@ -1,8 +1,9 @@
-package eabi
+package abi
 
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"reflect"
 	"strings"
 )
@@ -304,8 +305,56 @@ func (arguments Arguments) UnpackValues(data []byte) ([]interface{}, error) {
 
 // PackValues performs the operation Go format -> Hexdata
 // It is the semantic opposite of UnpackValues
-func (arguments Arguments) PackValues(args []interface{}) ([]byte, error) {
-	return arguments.Pack(args...)
+func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
+	// return arguments.Pack(args...)
+	// Make sure arguments match up and pack them
+	abiArgs := arguments
+	if len(values) != len(abiArgs) {
+		return nil, fmt.Errorf("argument count mismatch: %d for %d", len(values), len(abiArgs))
+	}
+	// variable input is the output appended at the end of packed
+	// output. This is used for strings and bytes types input.
+	var variableInput []byte
+
+	// input offset is the bytes offset for packed output
+	inputOffset := 0
+	for _, abiArg := range abiArgs {
+		inputOffset += getTypeSize(abiArg.Type)
+	}
+	var ret []byte
+	for i, v := range values {
+		input := abiArgs[i]
+		var a interface{}
+		switch input.Type.String() {
+		case "uint256":
+			a, _ = big.NewInt(0).SetString(v, 10)
+		case "string":
+			a = v
+		default:
+			return nil, fmt.Errorf("unsupport type(%s)", input.Type.String())
+		}
+		// pack the input
+		packed, err := input.Type.pack(reflect.ValueOf(a))
+		if err != nil {
+			return nil, err
+		}
+		// check for dynamic types
+		if isDynamicType(input.Type) {
+			// set the offset
+			ret = append(ret, packNum(reflect.ValueOf(inputOffset))...)
+			// calculate next offset
+			inputOffset += len(packed)
+			// append to variable input
+			variableInput = append(variableInput, packed...)
+		} else {
+			// append the packed value to the input
+			ret = append(ret, packed...)
+		}
+	}
+	// append the variable input at the end of the packed input
+	ret = append(ret, variableInput...)
+
+	return ret, nil
 }
 
 // Pack performs the operation Go format -> Hexdata
