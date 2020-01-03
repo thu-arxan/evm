@@ -7,7 +7,7 @@ contract Bakery {
         return contracts.length;
     }
 
-    function newCookie() public returns(address newContract) {
+    function newCookie() internal returns(address newContract) {
         Cookie c = new Cookie();
         contracts.push(c);
         return c;
@@ -15,7 +15,7 @@ contract Bakery {
 }
 
 contract Cookie {
-    function getFlavor() public view returns (string flavor) {
+    function getFlavor() public view returns (string memory flavor) {
         return "chocolate chip";
     }
 }
