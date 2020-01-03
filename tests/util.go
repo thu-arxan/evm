@@ -5,8 +5,6 @@ import (
 	"evm/abi"
 	"evm/eabi"
 	"fmt"
-	"io/ioutil"
-	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -80,14 +78,10 @@ func callWithPayload(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contrac
 	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
 }
 
-func parseABI(abiFile string) eabi.ABI {
-	data, err := ioutil.ReadFile(abiFile)
+func parsePayload(abiFile string, funcName string, args ...interface{}) ([]byte, error) {
+	abi, err := eabi.New(abiFile)
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
-	abi, err := eabi.JSON(strings.NewReader(string(data)))
-	if err != nil {
-		panic(err)
-	}
-	return abi
+	return abi.Pack(funcName, args...)
 }
