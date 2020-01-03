@@ -1,4 +1,3 @@
-
 package abi
 
 import (
@@ -20,8 +19,7 @@ var (
 	int16T    = reflect.TypeOf(int16(0))
 	int32T    = reflect.TypeOf(int32(0))
 	int64T    = reflect.TypeOf(int64(0))
-	// addressT  = reflect.TypeOf(common.Address{})
-	addressT = reflect.TypeOf(core.Address{})
+	addressT  = reflect.TypeOf(core.Address{})
 )
 
 // U256 converts a big Int into a 256bit EVM number.

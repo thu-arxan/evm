@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 	"reflect"
+	"strconv"
 	"strings"
 )
 
@@ -325,13 +326,51 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 	for i, v := range values {
 		input := abiArgs[i]
 		var a interface{}
-		switch input.Type.String() {
-		case "uint256":
-			a, _ = big.NewInt(0).SetString(v, 10)
+		t := input.Type.String()
+		switch t {
 		case "string":
 			a = v
 		default:
-			return nil, fmt.Errorf("unsupport type(%s)", input.Type.String())
+			if strings.HasPrefix(t, "uint") {
+				// todo: may be slice
+				digit, _ := strconv.ParseInt(strings.Replace(t, "uint", "", 1), 10, 0)
+				fmt.Println(digit)
+				if digit == 0 || digit > 64 {
+					a, _ = big.NewInt(0).SetString(v, 10)
+				} else {
+					a64, _ := strconv.ParseUint(v, 10, 0)
+					switch (digit - 1) / 8 {
+					case 0:
+						a = uint8(a64)
+					case 1:
+						a = uint16(a64)
+					case 2, 3:
+						a = uint32(a64)
+					default:
+						a = uint64(a64)
+					}
+				}
+			} else if strings.HasPrefix(t, "int") {
+				// todo: may be slice
+				digit, _ := strconv.ParseInt(strings.Replace(t, "int", "", 1), 10, 0)
+				if digit == 0 || digit > 64 {
+					a, _ = big.NewInt(0).SetString(v, 10)
+				} else {
+					a64, _ := strconv.ParseInt(v, 10, 0)
+					switch (digit - 1) / 8 {
+					case 0:
+						a = int8(a64)
+					case 1:
+						a = int16(a64)
+					case 2, 3:
+						a = int32(a64)
+					default:
+						a = int64(a64)
+					}
+				}
+			} else {
+				return nil, fmt.Errorf("unsupport type(%s)", t)
+			}
 		}
 		// pack the input
 		packed, err := input.Type.pack(reflect.ValueOf(a))

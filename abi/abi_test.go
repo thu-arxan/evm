@@ -121,6 +121,8 @@ func TestTestNumbers(t *testing.T) {
 	if _, err := abi.Pack("test", uint32(1000)); err != nil {
 		t.Error(err)
 	}
+
+	require.Equal(t, mustPack(abi, "test", uint32(1000)), mustPackValues(abi, "test", "1000"))
 }
 
 func TestTestString(t *testing.T) {
@@ -1058,4 +1060,20 @@ func Keccak256Hash(data ...[]byte) (h core.Hash) {
 	}
 	d.Sum(h[:0])
 	return h
+}
+
+func mustPack(abi ABI, name string, args ...interface{}) []byte {
+	bytes, err := abi.Pack(name, args...)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
+}
+
+func mustPackValues(abi ABI, name string, values ...string) []byte {
+	bytes, err := abi.PackValues(name, values...)
+	if err != nil {
+		panic(err)
+	}
+	return bytes
 }
