@@ -2,7 +2,6 @@ package tests
 
 import (
 	"evm"
-	"evm/abi"
 	"evm/db"
 	"evm/example"
 	"evm/util"
@@ -30,13 +29,11 @@ func TestMathSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	mathCode, mathAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 246938)
 	// then call the contract with chaos function
-	callMath(t, memoryDB, bc, origin, "chaos", nil, []string{"1"}, 53957, 30000)
+	callMath(t, memoryDB, bc, origin, mustParsePayload(mathAbi, "chaos"), 53957, 30000) // except "1"
 }
 
 // you can set gasCost to 0 if you do not want to compare gasCost
-func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, funcName string, inputs, excepts []string, gasCost, refund uint64) {
-	payload, err := abi.GetPayloadBytes(mathAbi, funcName, inputs)
-	require.NoError(t, err)
+func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payload []byte, gasCost, refund uint64) []byte {
 	var gasQuota uint64 = 10000000
 	var gas = gasQuota
 	vm := evm.New(bc, db, &evm.Context{
@@ -46,14 +43,9 @@ func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, fu
 	})
 	output, err := vm.Call(caller, mathAddress, mathCode)
 	require.NoError(t, err)
-	variables, err := abi.Unpacker(mathAbi, funcName, output)
-	require.NoError(t, err)
-	require.Len(t, variables, len(excepts))
-	for i := range excepts {
-		require.Equal(t, excepts[i], variables[i].Value)
-	}
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
 	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
+	return output
 }

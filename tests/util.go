@@ -2,8 +2,7 @@ package tests
 
 import (
 	"evm"
-	"evm/abi"
-	"evm/eabi"
+	abi "evm/abi"
 	"fmt"
 	"testing"
 
@@ -35,32 +34,6 @@ func deployContract(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Addre
 	return code, address
 }
 
-func call(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contract evm.Address, abiFile, funcName string, inputs, excepts []string, gasCost, refund uint64) {
-	payload, err := abi.GetPayloadBytes(abiFile, funcName, inputs)
-	fmt.Printf("payload is %x\n", payload)
-	require.NoError(t, err)
-	var gasQuota uint64 = 100000
-	var gas = gasQuota
-	vm := evm.New(bc, db, &evm.Context{
-		Input: payload,
-		Value: 0,
-		Gas:   &gas,
-	})
-	code := db.GetAccount(contract).GetCode()
-	output, err := vm.Call(caller, contract, code)
-	require.NoError(t, err)
-	variables, err := abi.Unpacker(abiFile, funcName, output)
-	require.NoError(t, err)
-	require.Len(t, variables, len(excepts))
-	for i := range excepts {
-		require.Equal(t, excepts[i], variables[i].Value)
-	}
-	if gasCost != 0 {
-		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
-	}
-	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
-}
-
 func callWithPayload(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contract evm.Address, payload []byte, gasCost, refund uint64) {
 	var gasQuota uint64 = 100000
 	var gas = gasQuota
@@ -79,9 +52,21 @@ func callWithPayload(t *testing.T, db evm.DB, bc evm.Blockchain, caller, contrac
 }
 
 func parsePayload(abiFile string, funcName string, args ...interface{}) ([]byte, error) {
-	abi, err := eabi.New(abiFile)
+	abi, err := abi.New(abiFile)
 	if err != nil {
 		return nil, err
 	}
 	return abi.Pack(funcName, args...)
+}
+
+func mustParsePayload(abiFile string, funcName string, args ...interface{}) []byte {
+	abi, err := abi.New(abiFile)
+	if err != nil {
+		panic(err)
+	}
+	value, err := abi.Pack(funcName, args...)
+	if err != nil {
+		panic(err)
+	}
+	return value
 }

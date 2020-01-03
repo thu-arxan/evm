@@ -28,10 +28,8 @@ func TestHashSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	hashCode, hashAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 209063)
 	// then call
-	payload, err := parsePayload(hashAbi, "SHA256", "hello")
-	require.NoError(t, err)
-	callWithPayload(t, memoryDB, bc, origin, hashAddress, payload, 2528, 0)
-	payload, err = parsePayload(hashAbi, "KECCAK256", "hello")
-	require.NoError(t, err)
-	callWithPayload(t, memoryDB, bc, origin, hashAddress, payload, 1170, 0)
+	callWithPayload(t, memoryDB, bc, origin, hashAddress, mustParsePayload(hashAbi, "SHA256", "hello"), 2528, 0)
+	// payload, err = parsePayload(hashAbi, "KECCAK256", "hello")
+	// require.NoError(t, err)
+	callWithPayload(t, memoryDB, bc, origin, hashAddress, mustParsePayload(hashAbi, "KECCAK256", "hello"), 1170, 0)
 }

@@ -1,152 +1,180 @@
-package abi
+package eabi
 
 import (
-	"encoding/hex"
-	"evm/crypto"
-	"evm/util"
+	"bytes"
+	"encoding/json"
+	"evm/core"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"strings"
 )
 
-// Variable defines the struct of key:value
-type Variable struct {
-	Name  string
-	Value string
+// The ABI holds information about a contract's context and available
+// invokable methods. It will allow you to type check function calls and
+// packs data accordingly.
+type ABI struct {
+	Constructor Method
+	Methods     map[string]Method
+	Events      map[string]Event
 }
 
-// Packer Convenience Packing Functions
-func Packer(abiData, funcName string, args ...string) ([]byte, error) {
-	abiSpec, err := ReadAbiSpec([]byte(abiData))
+// New will construct abi from abi file
+func New(abiFile string) (ABI, error) {
+	data, err := ioutil.ReadFile(abiFile)
 	if err != nil {
-		return nil, err
+		return ABI{}, err
 	}
-
-	iArgs := make([]interface{}, len(args))
-	for i, s := range args {
-		iArgs[i] = interface{}(s)
-	}
-	packedBytes, err := abiSpec.Pack(funcName, iArgs...)
-	if err != nil {
-		return nil, err
-	}
-
-	return packedBytes, nil
+	return JSON(strings.NewReader(string(data)))
 }
 
-// Unpacker read the file of abi and input the name of function and
-// output of function, then unpack the variables of output
-func Unpacker(abiFile, name string, data []byte) ([]*Variable, error) {
-	abiSpec, err := ReadAbiSpecFile(abiFile)
-	if err != nil {
-		return nil, err
-	}
-	var args []Argument
+// JSON returns a parsed ABI interface and error if it failed.
+func JSON(reader io.Reader) (ABI, error) {
+	dec := json.NewDecoder(reader)
 
+	var abi ABI
+	if err := dec.Decode(&abi); err != nil {
+		return ABI{}, err
+	}
+
+	return abi, nil
+}
+
+// Pack the given method name to conform the ABI. Method call's data
+// will consist of method_id, args0, arg1, ... argN. Method id consists
+// of 4 bytes and arguments are all 32 bytes.
+// Method ids are created from the first 4 bytes of the hash of the
+// methods string signature. (signature = baz(uint32,string32))
+func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
+	// Fetch the ABI of the requested method
 	if name == "" {
-		args = abiSpec.Constructor.Outputs
-	} else {
-		if _, ok := abiSpec.Functions[name]; ok {
-			args = abiSpec.Functions[name].Outputs
-		} else {
-			args = abiSpec.Fallback.Outputs
+		// constructor
+		arguments, err := abi.Constructor.Inputs.Pack(args...)
+		if err != nil {
+			return nil, err
 		}
+		return arguments, nil
 	}
-
-	if args == nil {
-		return nil, fmt.Errorf("no such function")
+	method, exist := abi.Methods[name]
+	if !exist {
+		return nil, fmt.Errorf("method '%s' not found", name)
 	}
-	vars := make([]*Variable, len(args))
-
-	if len(args) == 0 {
-		return nil, nil
-	}
-
-	vals := make([]interface{}, len(args))
-	for i := range vals {
-		vals[i] = new(string)
-	}
-	err = Unpack(args, data, vals...)
+	arguments, err := method.Inputs.Pack(args...)
 	if err != nil {
 		return nil, err
 	}
-
-	for i, a := range args {
-		if a.Name != "" {
-			vars[i] = &Variable{Name: a.Name, Value: *(vals[i].(*string))}
-		} else {
-			vars[i] = &Variable{Name: fmt.Sprintf("%d", i), Value: *(vals[i].(*string))}
-		}
-	}
-
-	return vars, nil
+	// Pack up the method ID too if not a constructor and return
+	return append(method.ID(), arguments...), nil
 }
 
-// GetFuncHash return the hash of function
-func GetFuncHash(abiFile, funcName string) (string, error) {
-	abiSpec, err := ReadAbiSpecFile(abiFile)
-	if err != nil {
-		return "", err
-	}
-
-	if _, ok := abiSpec.Functions[funcName]; ok {
-		args := abiSpec.Functions[funcName].Inputs
-		var input = funcName + "("
-		for _, a := range args {
-			input += a.EVM.GetSignature()
+// Unpack output in v according to the abi specification
+func (abi ABI) Unpack(v interface{}, name string, data []byte) (err error) {
+	// since there can't be naming collisions with contracts and events,
+	// we need to decide whether we're calling a method or an event
+	if method, ok := abi.Methods[name]; ok {
+		if len(data)%32 != 0 {
+			return fmt.Errorf("abi: improperly formatted output: %s - Bytes: [%+v]", string(data), data)
 		}
-		input += ")"
-		hash := crypto.Keccak256([]byte(input))
-		return util.Hex(hash[:4]), nil
+		return method.Outputs.Unpack(v, data)
 	}
-	return "", fmt.Errorf("no such function")
+	if event, ok := abi.Events[name]; ok {
+		return event.Inputs.Unpack(v, data)
+	}
+	return fmt.Errorf("abi: could not locate named method or event")
 }
 
-// GetPayload return the payload string
-func GetPayload(abiFile, funcName string, inputs []string) (string, error) {
-	abiSpec, err := ReadAbiSpecFile(abiFile)
-	if err != nil {
-		return "", err
-	}
-
-	if _, ok := abiSpec.Functions[funcName]; ok {
-		args := abiSpec.Functions[funcName].Inputs
-		if len(args) != len(inputs) {
-			return "", fmt.Errorf("Except %d inputs other than %d inputs", len(args), len(inputs))
+// UnpackIntoMap unpacks a log into the provided map[string]interface{}
+func (abi ABI) UnpackIntoMap(v map[string]interface{}, name string, data []byte) (err error) {
+	// since there can't be naming collisions with contracts and events,
+	// we need to decide whether we're calling a method or an event
+	if method, ok := abi.Methods[name]; ok {
+		if len(data)%32 != 0 {
+			return fmt.Errorf("abi: improperly formatted output")
 		}
-		var input = funcName + "("
-		var payload []byte
-		for i, a := range args {
-			input += a.EVM.GetSignature()
-			bs, err := a.EVM.pack(inputs[i])
-			if err != nil {
-				return "", err
+		return method.Outputs.UnpackIntoMap(v, data)
+	}
+	if event, ok := abi.Events[name]; ok {
+		return event.Inputs.UnpackIntoMap(v, data)
+	}
+	return fmt.Errorf("abi: could not locate named method or event")
+}
+
+// UnmarshalJSON implements json.Unmarshaler interface
+func (abi *ABI) UnmarshalJSON(data []byte) error {
+	var fields []struct {
+		Type      string
+		Name      string
+		Constant  bool
+		Anonymous bool
+		Inputs    []Argument
+		Outputs   []Argument
+	}
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	abi.Methods = make(map[string]Method)
+	abi.Events = make(map[string]Event)
+	for _, field := range fields {
+		switch field.Type {
+		case "constructor":
+			abi.Constructor = Method{
+				Inputs: field.Inputs,
 			}
-			payload = util.BytesCombine(payload, bs)
-		}
-		input += ")"
-		hash := crypto.Keccak256([]byte(input))
-		return util.Hex(hash[:4]) + util.Hex(payload), nil
-	}
-	return "", fmt.Errorf("no such function")
-}
-
-// GetPayloadBytes return the payload bytes
-func GetPayloadBytes(abiFile, funcName string, inputs []string) ([]byte, error) {
-	payload, err := GetPayload(abiFile, funcName, inputs)
-	if err != nil {
-		return nil, err
-	}
-	return hex.DecodeString(payload)
-}
-
-func stripHex(s string) string {
-	if len(s) > 1 {
-		if s[:2] == "0x" {
-			s = s[2:]
-			if len(s)%2 != 0 {
-				s = "0" + s
+		// empty defaults to function according to the abi spec
+		case "function", "":
+			name := field.Name
+			_, ok := abi.Methods[name]
+			for idx := 0; ok; idx++ {
+				name = fmt.Sprintf("%s%d", field.Name, idx)
+				_, ok = abi.Methods[name]
 			}
-			return s
+			abi.Methods[name] = Method{
+				Name:    name,
+				RawName: field.Name,
+				Const:   field.Constant,
+				Inputs:  field.Inputs,
+				Outputs: field.Outputs,
+			}
+		case "event":
+			name := field.Name
+			_, ok := abi.Events[name]
+			for idx := 0; ok; idx++ {
+				name = fmt.Sprintf("%s%d", field.Name, idx)
+				_, ok = abi.Events[name]
+			}
+			abi.Events[name] = Event{
+				Name:      name,
+				RawName:   field.Name,
+				Anonymous: field.Anonymous,
+				Inputs:    field.Inputs,
+			}
 		}
 	}
-	return s
+
+	return nil
+}
+
+// MethodByID looks up a method by the 4-byte id
+// returns nil if none found
+func (abi *ABI) MethodByID(sigdata []byte) (*Method, error) {
+	if len(sigdata) < 4 {
+		return nil, fmt.Errorf("data too short (%d bytes) for abi method lookup", len(sigdata))
+	}
+	for _, method := range abi.Methods {
+		if bytes.Equal(method.ID(), sigdata[:4]) {
+			return &method, nil
+		}
+	}
+	return nil, fmt.Errorf("no method with id: %#x", sigdata[:4])
+}
+
+// EventByID looks an event up by its topic hash in the
+// ABI and returns nil if none found.
+func (abi *ABI) EventByID(topic core.Hash) (*Event, error) {
+	for _, event := range abi.Events {
+		if bytes.Equal(event.ID().Bytes(), topic.Bytes()) {
+			return &event, nil
+		}
+	}
+	return nil, fmt.Errorf("no event with id: %#x", topic.Hex())
 }
