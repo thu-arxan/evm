@@ -11,6 +11,7 @@ import (
 // Note: It's not thread safety because now it will only be used in one thread.
 type Cache struct {
 	db       DB
+	readonly bool
 	accounts map[string]*accountInfo
 }
 
