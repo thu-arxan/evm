@@ -1,5 +1,7 @@
 package core
 
+import "fmt"
+
 // Lengths of hashes in bytes.
 const (
 	HashLength = 32
@@ -22,4 +24,14 @@ func (h *Hash) SetBytes(b []byte) {
 	}
 
 	copy(h[HashLength-len(b):], b)
+}
+
+// Bytes return bytes of hash
+func (h Hash) Bytes() []byte {
+	return h[:]
+}
+
+// Hex return hex of hash
+func (h Hash) Hex() string {
+	return fmt.Sprintf("%x", h.Bytes())
 }

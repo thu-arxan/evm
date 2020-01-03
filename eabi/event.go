@@ -1,8 +1,8 @@
-
-
 package eabi
 
 import (
+	"evm/core"
+	"evm/crypto"
 	"fmt"
 	"strings"
 )
@@ -55,6 +55,6 @@ func (e Event) Sig() string {
 
 // ID returns the canonical representation of the event's signature used by the
 // abi definition to identify event names and types.
-// func (e Event) ID() common.Hash {
-// 	return common.BytesToHash(crypto.Keccak256([]byte(e.Sig())))
-// }
+func (e Event) ID() core.Hash {
+	return core.BytesToHash(crypto.Keccak256([]byte(e.Sig())))
+}

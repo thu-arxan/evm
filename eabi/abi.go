@@ -3,6 +3,7 @@ package eabi
 import (
 	"bytes"
 	"encoding/json"
+	"evm/core"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -169,11 +170,11 @@ func (abi *ABI) MethodByID(sigdata []byte) (*Method, error) {
 
 // EventByID looks an event up by its topic hash in the
 // ABI and returns nil if none found.
-// func (abi *ABI) EventByID(topic common.Hash) (*Event, error) {
-// 	for _, event := range abi.Events {
-// 		if bytes.Equal(event.ID().Bytes(), topic.Bytes()) {
-// 			return &event, nil
-// 		}
-// 	}
-// 	return nil, fmt.Errorf("no event with id: %#x", topic.Hex())
-// }
+func (abi *ABI) EventByID(topic core.Hash) (*Event, error) {
+	for _, event := range abi.Events {
+		if bytes.Equal(event.ID().Bytes(), topic.Bytes()) {
+			return &event, nil
+		}
+	}
+	return nil, fmt.Errorf("no event with id: %#x", topic.Hex())
+}

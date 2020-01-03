@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"golang.org/x/crypto/sha3"
 
 	"evm/core"
 	"evm/crypto"
@@ -939,73 +940,73 @@ func TestABI_MethodById(t *testing.T) {
 	}
 }
 
-// func TestABI_EventById(t *testing.T) {
-// 	tests := []struct {
-// 		name  string
-// 		json  string
-// 		event string
-// 	}{
-// 		{
-// 			name: "",
-// 			json: `[
-// 			{"type":"event","name":"received","anonymous":false,"inputs":[
-// 				{"indexed":false,"name":"sender","type":"address"},
-// 				{"indexed":false,"name":"amount","type":"uint256"},
-// 				{"indexed":false,"name":"memo","type":"bytes"}
-// 				]
-// 			}]`,
-// 			event: "received(address,uint256,bytes)",
-// 		}, {
-// 			name: "",
-// 			json: `[
-// 				{ "constant": true, "inputs": [], "name": "name", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "constant": false, "inputs": [ { "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "approve", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-// 				{ "constant": true, "inputs": [], "name": "totalSupply", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "constant": false, "inputs": [ { "name": "_from", "type": "address" }, { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transferFrom", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-// 				{ "constant": true, "inputs": [], "name": "decimals", "outputs": [ { "name": "", "type": "uint8" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "constant": true, "inputs": [], "name": "symbol", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "constant": false, "inputs": [ { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transfer", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
-// 				{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" } ], "name": "allowance", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
-// 				{ "payable": true, "stateMutability": "payable", "type": "fallback" },
-// 				{ "anonymous": false, "inputs": [ { "indexed": true, "name": "owner", "type": "address" }, { "indexed": true, "name": "spender", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Approval", "type": "event" },
-// 				{ "anonymous": false, "inputs": [ { "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Transfer", "type": "event" }
-// 			]`,
-// 			event: "Transfer(address,address,uint256)",
-// 		},
-// 	}
+func TestABI_EventById(t *testing.T) {
+	tests := []struct {
+		name  string
+		json  string
+		event string
+	}{
+		{
+			name: "",
+			json: `[
+			{"type":"event","name":"received","anonymous":false,"inputs":[
+				{"indexed":false,"name":"sender","type":"address"},
+				{"indexed":false,"name":"amount","type":"uint256"},
+				{"indexed":false,"name":"memo","type":"bytes"}
+				]
+			}]`,
+			event: "received(address,uint256,bytes)",
+		}, {
+			name: "",
+			json: `[
+				{ "constant": true, "inputs": [], "name": "name", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "constant": false, "inputs": [ { "name": "_spender", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "approve", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "constant": true, "inputs": [], "name": "totalSupply", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "constant": false, "inputs": [ { "name": "_from", "type": "address" }, { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transferFrom", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "constant": true, "inputs": [], "name": "decimals", "outputs": [ { "name": "", "type": "uint8" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" } ], "name": "balanceOf", "outputs": [ { "name": "balance", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "constant": true, "inputs": [], "name": "symbol", "outputs": [ { "name": "", "type": "string" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "constant": false, "inputs": [ { "name": "_to", "type": "address" }, { "name": "_value", "type": "uint256" } ], "name": "transfer", "outputs": [ { "name": "", "type": "bool" } ], "payable": false, "stateMutability": "nonpayable", "type": "function" },
+				{ "constant": true, "inputs": [ { "name": "_owner", "type": "address" }, { "name": "_spender", "type": "address" } ], "name": "allowance", "outputs": [ { "name": "", "type": "uint256" } ], "payable": false, "stateMutability": "view", "type": "function" },
+				{ "payable": true, "stateMutability": "payable", "type": "fallback" },
+				{ "anonymous": false, "inputs": [ { "indexed": true, "name": "owner", "type": "address" }, { "indexed": true, "name": "spender", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Approval", "type": "event" },
+				{ "anonymous": false, "inputs": [ { "indexed": true, "name": "from", "type": "address" }, { "indexed": true, "name": "to", "type": "address" }, { "indexed": false, "name": "value", "type": "uint256" } ], "name": "Transfer", "type": "event" }
+			]`,
+			event: "Transfer(address,address,uint256)",
+		},
+	}
 
-// 	for testnum, test := range tests {
-// 		abi, err := JSON(strings.NewReader(test.json))
-// 		if err != nil {
-// 			t.Error(err)
-// 		}
+	for testnum, test := range tests {
+		abi, err := JSON(strings.NewReader(test.json))
+		if err != nil {
+			t.Error(err)
+		}
 
-// 		topic := test.event
-// 		topicID := crypto.Keccak256Hash([]byte(topic))
+		topic := test.event
+		topicID := Keccak256Hash([]byte(topic))
 
-// 		event, err := abi.EventByID(topicID)
-// 		if err != nil {
-// 			t.Fatalf("Failed to look up ABI method: %v, test #%d", err, testnum)
-// 		}
-// 		if event == nil {
-// 			t.Errorf("We should find a event for topic %s, test #%d", topicID.Hex(), testnum)
-// 		}
+		event, err := abi.EventByID(topicID)
+		if err != nil {
+			t.Fatalf("Failed to look up ABI method: %v, test #%d", err, testnum)
+		}
+		if event == nil {
+			t.Errorf("We should find a event for topic %s, test #%d", topicID.Hex(), testnum)
+		}
 
-// 		if event.ID() != topicID {
-// 			t.Errorf("Event id %s does not match topic %s, test #%d", event.ID().Hex(), topicID.Hex(), testnum)
-// 		}
+		if event.ID() != topicID {
+			t.Errorf("Event id %s does not match topic %s, test #%d", event.ID().Hex(), topicID.Hex(), testnum)
+		}
 
-// 		unknowntopicID := crypto.Keccak256Hash([]byte("unknownEvent"))
-// 		unknownEvent, err := abi.EventByID(unknowntopicID)
-// 		if err == nil {
-// 			t.Errorf("EventByID should return an error if a topic is not found, test #%d", testnum)
-// 		}
-// 		if unknownEvent != nil {
-// 			t.Errorf("We should not find any event for topic %s, test #%d", unknowntopicID.Hex(), testnum)
-// 		}
-// 	}
-// }
+		unknowntopicID := Keccak256Hash([]byte("unknownEvent"))
+		unknownEvent, err := abi.EventByID(unknowntopicID)
+		if err == nil {
+			t.Errorf("EventByID should return an error if a topic is not found, test #%d", testnum)
+		}
+		if unknownEvent != nil {
+			t.Errorf("We should not find any event for topic %s, test #%d", unknowntopicID.Hex(), testnum)
+		}
+	}
+}
 
 func TestDuplicateMethodNames(t *testing.T) {
 	abiJSON := `[{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"}],"name":"transfer","outputs":[{"name":"ok","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"},{"name":"data","type":"bytes"}],"name":"transfer","outputs":[{"name":"ok","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},{"constant":false,"inputs":[{"name":"to","type":"address"},{"name":"value","type":"uint256"},{"name":"data","type":"bytes"},{"name":"customFallback","type":"string"}],"name":"transfer","outputs":[{"name":"ok","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"}]`
@@ -1047,4 +1048,15 @@ func TestDoubleDuplicateMethodNames(t *testing.T) {
 	if _, ok := contractAbi.Methods["transfer2"]; ok {
 		t.Fatalf("Should not have found extra method")
 	}
+}
+
+// Keccak256Hash calculates and returns the Keccak256 hash of the input data,
+// converting it to an internal Hash data structure.
+func Keccak256Hash(data ...[]byte) (h core.Hash) {
+	d := sha3.NewLegacyKeccak256()
+	for _, b := range data {
+		d.Write(b)
+	}
+	d.Sum(h[:0])
+	return h
 }
