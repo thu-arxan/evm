@@ -109,3 +109,8 @@ func (m *Memory) AddLog(log *evm.Log) {
 	log.Index = uint(len(m.logs))
 	m.logs = append(m.logs, log)
 }
+
+// GetLog return logs
+func (m *Memory) GetLog() []*evm.Log {
+	return m.logs
+}

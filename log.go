@@ -2,6 +2,7 @@ package evm
 
 import (
 	"evm/core"
+	"fmt"
 )
 
 // Log is the log of evm
@@ -23,4 +24,22 @@ type Log struct {
 	BlockHash []byte `json:"blockHash"`
 	// index of the log in the block
 	Index uint `json:"logIndex"`
+}
+
+// String return string of log
+// Note: This should be used only for testing.
+// TODO: A better String of remove it.
+func (l *Log) String() string {
+	if len(l.Topics) == 0 {
+		return fmt.Sprintf("Address is %x, data is %x", l.Address.Bytes(), l.Data)
+	}
+	var topic = "["
+	for i := range l.Topics {
+		if i != 0 {
+			topic += ","
+		}
+		topic += fmt.Sprintf("%x", l.Topics[i].Bytes())
+	}
+	topic += "]"
+	return fmt.Sprintf("Address is %x, topic is %s, data is %x", l.Address.Bytes(), topic, l.Data)
 }

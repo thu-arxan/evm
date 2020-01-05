@@ -5,6 +5,7 @@ import (
 	"evm/db"
 	"evm/example"
 	"evm/util"
+	"fmt"
 	"math/big"
 	"testing"
 
@@ -30,4 +31,7 @@ func TestLogSol(t *testing.T) {
 	logCode, logAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 96759)
 	// then call the contract with appendEntry function
 	callWithPayload(t, memoryDB, bc, origin, logAddress, mustParsePayload(logAbi, "appendEntry", "money", big.NewInt(10)), 2779, 0)
+	require.Len(t, memoryDB.GetLog(), 1)
+	entry := memoryDB.GetLog()[0]
+	require.Equal(t, exceptAddress, fmt.Sprintf("%x", entry.Address.Bytes()))
 }
