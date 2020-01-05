@@ -8,7 +8,7 @@
 - POP
 - SWAP*(SWAP1, SWAP2, SWAP3)
 - CALLVALUE
-- DUP*(DUP1, DUP3, DUP4)
+- DUP*(DUP1, DUP2, DUP3, DUP4)
 - ISZERO
 - JUMP
 - JUMPI
@@ -16,7 +16,6 @@
 - EQ
 - CALLDATASIZE
 - LT
-- DUP2
 - SHR
 - MUL
 - DIV
@@ -56,6 +55,7 @@
 - CHAINID
 - STATICCALL
 - SHA3
+- LOG*
 
 ## 2. 部分测试
 
