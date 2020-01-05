@@ -104,5 +104,8 @@ func (m *Memory) RemoveAccount(address evm.Address) error {
 
 // AddLog is the implementation of interface
 func (m *Memory) AddLog(log *evm.Log) {
+	// Note: We should set some infos like txIndex, blockHash and etc.
+	// We just set index as example.
+	log.Index = uint(len(m.logs))
 	m.logs = append(m.logs, log)
 }

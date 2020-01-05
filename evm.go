@@ -831,8 +831,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 			data, memoryGas := memory.Read(offset, size)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
-			// TODO: Add test to test this
-			maybe.PushError(useGasNegative(ctx.Gas, gas.Log+gas.LogData*((size.Uint64()+31)/32)+uint64(op-LOG0)*gas.LogTopic))
+			maybe.PushError(useGasNegative(ctx.Gas, gas.Log+gas.LogData*size.Uint64()+uint64(op-LOG0)*gas.LogTopic))
 			evm.cache.AddLog(&Log{
 				Address: callee,
 				Topics:  topics,

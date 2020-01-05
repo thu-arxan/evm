@@ -1,0 +1,53 @@
+package tests
+
+import (
+	"evm"
+	"evm/db"
+	"evm/example"
+	"evm/util"
+	"fmt"
+	"math/big"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+var (
+	logAbi     = "sols/Log_sol_Log.abi"
+	logBin     = "sols/Log_sol_Log.bin"
+	logCode    []byte
+	logAddress evm.Address
+)
+
+func TestLogSol(t *testing.T) {
+	var err error
+	binBytes, err := util.ReadBinFile(logBin)
+	require.NoError(t, err)
+	bc := example.NewBlockchain()
+	memoryDB := db.NewMemory(bc.NewAccount)
+	var origin = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
+	var exceptCode = `60806040523480156100115760006000fd5b50600436106100305760003560e01c806336b899bb1461003657610030565b60006000fd5b6101016004803603604081101561004d5760006000fd5b810190808035906020019064010000000081111561006b5760006000fd5b82018360208201111561007e5760006000fd5b803590602001918460018302840111640100000000831117156100a15760006000fd5b91908080601f016020809104026020016040519081016040528093929190818152602001838380828437600081840152601f19601f8201169050808301925050505050505090909192909091929080359060200190929190505050610103565b005b7f5c3eb8a1a7a5c7ef4c1a21921deb90256ddeb181f2665b8868ebfe35b8c9b9a782826040518080602001838152602001828103825284818151815260200191508051906020019080838360005b8381101561016d5780820151818401525b602081019050610151565b50505050905090810190601f16801561019a5780820380516001836020036101000a031916815260200191505b50935050505060405180910390a15b505056fea264697066735822122086a125077f6cec359aa907d52abb0e9a93cedbf5635c51e521fd7b9c83820e3c64736f6c63430006000033`
+	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
+	logCode, logAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 96759)
+	// then call the contract with appendEntry function
+	callWithPayload(t, memoryDB, bc, origin, logAddress, mustParsePayload(logAbi, "appendEntry", "money", big.NewInt(10)), 2779, 0)
+}
+
+// you can set gasCost to 0 if you do not want to compare gasCost
+func callLog(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payload []byte, gasCost, refund uint64) []byte {
+	var gasQuota uint64 = 10000000
+	var gas = gasQuota
+	vm := evm.New(bc, db, &evm.Context{
+		Input: payload,
+		Value: 0,
+		Gas:   &gas,
+	})
+	fmt.Printf("payload is %x\n", payload)
+	output, err := vm.Call(caller, logAddress, logCode)
+	require.NoError(t, err)
+	if gasCost != 0 {
+		require.EqualValues(t, gasCost, gasQuota-gas)
+	}
+	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
+	return output
+}

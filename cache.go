@@ -13,6 +13,7 @@ type Cache struct {
 	db       DB
 	readonly bool
 	accounts map[string]*accountInfo
+	logs     []*Log
 }
 
 type accountInfo struct {
@@ -97,9 +98,8 @@ func (cache *Cache) GetNonce(address Address) uint64 {
 }
 
 // AddLog add log
-// todo: not implement yet
 func (cache *Cache) AddLog(log *Log) {
-
+	cache.logs = append(cache.logs, log)
 }
 
 // Sync will sync change to db
@@ -114,6 +114,9 @@ func (cache *Cache) Sync() {
 				wb.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
 			}
 		}
+	}
+	for i := range cache.logs {
+		wb.AddLog(cache.logs[i])
 	}
 }
 
