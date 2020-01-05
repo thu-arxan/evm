@@ -5,7 +5,6 @@ import (
 	"evm/db"
 	"evm/example"
 	"evm/util"
-	"fmt"
 	"math/big"
 	"testing"
 
@@ -31,23 +30,4 @@ func TestLogSol(t *testing.T) {
 	logCode, logAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 96759)
 	// then call the contract with appendEntry function
 	callWithPayload(t, memoryDB, bc, origin, logAddress, mustParsePayload(logAbi, "appendEntry", "money", big.NewInt(10)), 2779, 0)
-}
-
-// you can set gasCost to 0 if you do not want to compare gasCost
-func callLog(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payload []byte, gasCost, refund uint64) []byte {
-	var gasQuota uint64 = 10000000
-	var gas = gasQuota
-	vm := evm.New(bc, db, &evm.Context{
-		Input: payload,
-		Value: 0,
-		Gas:   &gas,
-	})
-	fmt.Printf("payload is %x\n", payload)
-	output, err := vm.Call(caller, logAddress, logCode)
-	require.NoError(t, err)
-	if gasCost != 0 {
-		require.EqualValues(t, gasCost, gasQuota-gas)
-	}
-	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
-	return output
 }
