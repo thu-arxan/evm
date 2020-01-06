@@ -1,21 +1,29 @@
 pragma solidity ^0.6.0;
 
-contract Bakery {
-    address[] public contracts;
-
-    function getContractCount() public view returns(uint contractCount) {
-        return contracts.length;
-    }
-
-    function newCookie() internal returns(address newContract) {
-        Cookie c = new Cookie();
-        contracts.push(c);
-        return c;
+contract D {
+    uint public x;
+    constructor(uint a) public payable {
+        x = a;
     }
 }
 
-contract Cookie {
-    function getFlavor() public view returns (string memory flavor) {
-        return "chocolate chip";
+contract C {
+    D d = new D(4); // will be executed as part of C's constructor
+
+    function createD(uint arg) public {
+        D newD = new D(arg);
+        newD.x();
+    }
+
+    function createAndEndowD(uint arg, uint amount) public payable returns (address){
+        // Send ether along with the creation
+        D newD = (new D).value(amount)(arg);
+        newD.x();
+        return address(newD);
+    }
+
+    function createAndGetBalance(uint arg, uint amount) public returns (uint) {
+        address newD = createAndEndowD(arg, amount);
+        return newD.balance;
     }
 }
