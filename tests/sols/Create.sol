@@ -15,9 +15,15 @@ contract C {
         newD.x();
     }
 
-    function createAndEndowD(uint arg, uint amount) public payable {
+    function createAndEndowD(uint arg, uint amount) public payable returns (address){
         // Send ether along with the creation
         D newD = (new D).value(amount)(arg);
         newD.x();
+        return address(newD);
+    }
+
+    function createAndGetBalance(uint arg, uint amount) public returns (uint) {
+        address newD = createAndEndowD(arg, amount);
+        return newD.balance;
     }
 }
