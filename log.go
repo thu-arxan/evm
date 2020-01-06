@@ -28,7 +28,7 @@ type Log struct {
 
 // String return string of log
 // Note: This should be used only for testing.
-// TODO: A better String of remove it.
+// TODO: A better String or remove it.
 func (l *Log) String() string {
 	if len(l.Topics) == 0 {
 		return fmt.Sprintf("Address is %x, data is %x", l.Address.Bytes(), l.Data)
