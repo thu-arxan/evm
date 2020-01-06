@@ -39,6 +39,12 @@ func (m *Memory) Exist(address evm.Address) bool {
 	return util.Contain(m.accounts, key)
 }
 
+// HasSuicide is the implementation of interface
+// todo: it just return false now.
+func (m *Memory) HasSuicide(address evm.Address) bool {
+	return false
+}
+
 // GetAccount is the implementation of interface
 func (m *Memory) GetAccount(address evm.Address) evm.Account {
 	key := string(address.Bytes())
@@ -86,9 +92,9 @@ func (m *Memory) UpdateAccount(account evm.Account) error {
 	return nil
 }
 
-// RemoveAccount is the implementation of interface
+// Suicide is the implementation of interface
 // TODO: What if an acount is not exist?
-func (m *Memory) RemoveAccount(address evm.Address) error {
+func (m *Memory) Suicide(address evm.Address) error {
 	key := string(address.Bytes())
 	if util.Contain(m.accounts, key) {
 		m.accounts[key].removed = true

@@ -32,11 +32,18 @@ func NewCache(db DB) *Cache {
 }
 
 // Exist return if an account exist
+// todo: wrong implementation
 func (cache *Cache) Exist(addr Address) bool {
 	if util.Contain(cache.accounts, addressToString(addr)) {
 		return true
 	}
 	return cache.db.Exist(addr)
+}
+
+// HasSuicide return if an account has suicide
+// todo: just return false now
+func (cache *Cache) HasSuicide(addr Address) bool {
+	return false
 }
 
 // GetAccount return the account of address
@@ -55,8 +62,8 @@ func (cache *Cache) UpdateAccount(account Account) error {
 	return nil
 }
 
-// RemoveAccount remove an account
-func (cache *Cache) RemoveAccount(address Address) error {
+// Suicide remove an account
+func (cache *Cache) Suicide(address Address) error {
 	accInfo := cache.get(address)
 	if accInfo.removed {
 		return fmt.Errorf("RemoveAccount on a removed account: %s", address)
@@ -107,7 +114,7 @@ func (cache *Cache) Sync() {
 	wb := cache.db.NewWriteBatch()
 	for _, info := range cache.accounts {
 		if info.removed {
-			wb.RemoveAccount(info.account.GetAddress())
+			wb.Suicide(info.account.GetAddress())
 		} else if info.updated {
 			wb.UpdateAccount(info.account)
 			for key, value := range info.storage {

@@ -40,7 +40,11 @@ const (
 	QuadDivisor   uint64 = 20
 	CreateData    uint64 = 200
 
-	CallNewAccount uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
+	CallNewAccount     uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
+	SelfdestructEIP150 uint64 = 5000  // Cost of SELFDESTRUCT post EIP 150 (Tangerine)
+	// CreateBySelfdestructGas is used when the refunded account is one that does not exist. This logic is similar to call.
+	CreateBySelfdestruct uint64 = 25000 // Introduced in Tangerine Whistle (Eip 150)
+	SelfdestructRefund   uint64 = 24000 // Refunded following a selfdestruct operation.
 
 	// EIP2200 changes many things of Sstore
 	SstoreSentryEIP2200      uint64 = 2300  // Minimum gas required to be present for an SSTORE call, not consumed

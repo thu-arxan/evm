@@ -31,6 +31,7 @@ type DB interface {
 	// Exist return if the account exist
 	// Note: if account is suicided, return true
 	Exist(address Address) bool
+	HasSuicide(address Address) bool
 	// GetStorage return a default account if unexist
 	GetAccount(address Address) Account
 	// Note: GetStorage return nil if key is not exist
@@ -43,7 +44,7 @@ type WriteBatch interface {
 	SetStorage(address Address, key core.Word256, value []byte)
 	UpdateAccount(account Account) error
 	// Remove the account at address
-	RemoveAccount(address Address) error
+	Suicide(address Address) error
 	AddLog(log *Log)
 }
 
