@@ -909,7 +909,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			retOffset, retSize := stack.PopBigInt(), stack.PopUint64()
 			if value != 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.CallValue))
-				// todo: address is empty in eip158, only CALL should support this
+				if op == CALL && isEmptyAccount(evm.getAccount(maybe, target)) {
+					useGasNegative(ctx.Gas, gas.CallNewAccount)
+				}
 			}
 			input, memoryGas := memory.Read(inOffset, inSize)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
@@ -1103,4 +1105,14 @@ func callGas(availableGas, callCostGas uint64) uint64 {
 		return gas
 	}
 	return callCostGas
+}
+
+func isEmptyAccount(account Account) bool {
+	if account == nil {
+		return true
+	}
+	if account.GetBalance() == 0 && len(account.GetCode()) == 0 && account.GetNonce() == 0 {
+		return true
+	}
+	return false
 }
