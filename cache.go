@@ -32,18 +32,25 @@ func NewCache(db DB) *Cache {
 }
 
 // Exist return if an account exist
-// todo: wrong implementation
 func (cache *Cache) Exist(addr Address) bool {
-	if util.Contain(cache.accounts, addressToString(addr)) {
-		return true
+	key := addressToString(addr)
+	if util.Contain(cache.accounts, key) {
+		info := cache.accounts[key]
+		if info.updated || info.removed || !isEmptyAccount(info.account) {
+			return true
+		}
+		// maybe a cache of default account, we need to ask underlying database to figure out if the account exist
 	}
 	return cache.db.Exist(addr)
 }
 
 // HasSuicide return if an account has suicide
-// todo: just return false now
 func (cache *Cache) HasSuicide(addr Address) bool {
-	return false
+	key := addressToString(addr)
+	if util.Contain(cache.accounts, key) {
+		return cache.accounts[key].removed
+	}
+	return cache.db.HasSuicide(addr)
 }
 
 // GetAccount return the account of address
