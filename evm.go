@@ -873,7 +873,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			newAccount := evm.bc.NewAccount(newAccountAddress)
 			newAccount.SetNonce(newAccount.GetNonce() + 1)
 			maybe.PushError(evm.cache.UpdateAccount(newAccount))
-
 			// Run the input to get the contract code.
 			// NOTE: no need to copy 'input' as per Call contract.
 			// record old ctx
