@@ -2,6 +2,7 @@ package evm
 
 import (
 	"bytes"
+	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	"evm/core"
@@ -845,8 +846,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input, _ := memory.Read(offset, size)
 
-			// TODO charge for gas to create account _ the code length * gas.CreateByte
-			// maybe.PushError(useGasNegative(ctx.Gas, gas.CreateAccount))
+			// apply EIP150
+			*ctx.Gas -= *ctx.Gas / 64
 
 			var newAccountAddress Address
 			if op == CREATE {
@@ -856,7 +857,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				}
 				calleeAccount := evm.cache.GetAccount(callee)
 				calleeAccount.SetNonce(evm.cache.GetNonce(callee) + 1)
-				evm.cache.UpdateAccount(calleeAccount)
+				maybe.PushError(evm.cache.UpdateAccount(calleeAccount))
 			} else if op == CREATE2 {
 				salt := stack.Pop()
 				code := evm.getAccount(callee).GetCode()
@@ -891,9 +892,13 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			} else {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
-				newAccount := evm.getAccount(newAccountAddress)
-				newAccount.SetCode(ret)
-				stack.PushAddress(newAccountAddress)
+				createDataGas := uint64(len(ret)) * params.CreateDataGas
+				maybe.PushError(useGasNegative(ctx.Gas, createDataGas))
+				if maybe.Error() == nil {
+					newAccount := evm.getAccount(newAccountAddress)
+					newAccount.SetCode(ret)
+					stack.PushAddress(newAccountAddress)
+				}
 			}
 
 		case CALL, CALLCODE:
