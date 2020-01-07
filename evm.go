@@ -2,7 +2,6 @@ package evm
 
 import (
 	"bytes"
-	"github.com/ethereum/go-ethereum/params"
 	"math/big"
 
 	"evm/core"
@@ -900,7 +899,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			} else {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
-				createDataGas := uint64(len(ret)) * params.CreateDataGas
+				createDataGas := uint64(len(ret)) * gas.CreateData
 				maybe.PushError(useGasNegative(ctx.Gas, createDataGas))
 				if maybe.Error() == nil {
 					newAccount := evm.getAccount(newAccountAddress)
