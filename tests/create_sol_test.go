@@ -26,7 +26,7 @@ func TestCreateSol(t *testing.T) {
 	memoryDB := db.NewMemory(bc.NewAccount)
 	var origin = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
-	CCode, CAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, "", 321307)
+	CCode, CAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, "", 0)
 	callInfo(t, memoryDB, bc, origin, mustParsePayload(createAbi, "createAndGetBalance", big.NewInt(44), big.NewInt(0)), 84357)
 }
 
