@@ -57,6 +57,7 @@
 - SHA3
 - LOG*
 - CALL
+- SELFDESTRUCT
 
 ## 2. 部分测试
 
@@ -86,4 +87,3 @@
 - CREATE2
 - REVERT
 - INVALID
-- SELFDESTRUCT

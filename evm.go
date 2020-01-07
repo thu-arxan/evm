@@ -206,8 +206,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		var op = getOpCode(code, pc)
 		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
 
-		// maybe.PushError(useGasNegative(ctx.Gas, gas.BaseOp))
-
 		switch op {
 		case ADD: // 0x01
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
