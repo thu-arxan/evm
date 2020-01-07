@@ -108,3 +108,11 @@ func mustParsePayload(abiFile string, funcName string, args ...interface{}) []by
 	fmt.Printf("payload is %x\n", value)
 	return value
 }
+
+func mustUnpack(abiFile string, funcName string, data []byte) []string {
+	values, err := abi.Unpack(abiFile, funcName, data)
+	if err != nil {
+		panic(err)
+	}
+	return values
+}

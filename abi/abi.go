@@ -68,6 +68,7 @@ func (abi ABI) Pack(name string, args ...interface{}) ([]byte, error) {
 }
 
 // PackValues pack inputs which are construct without type
+// TODO: Support more types
 func (abi ABI) PackValues(name string, inputs ...string) ([]byte, error) {
 	// Fetch the ABI of the requested method
 	if name == "" {
@@ -104,6 +105,36 @@ func (abi ABI) Unpack(v interface{}, name string, data []byte) (err error) {
 		return event.Inputs.Unpack(v, data)
 	}
 	return fmt.Errorf("abi: could not locate named method or event")
+}
+
+// UnpackValues unpack data to string slice
+func (abi ABI) UnpackValues(name string, data []byte) ([]string, error) {
+	if method, ok := abi.Methods[name]; ok {
+		if len(data)%32 != 0 {
+			return nil, fmt.Errorf("abi: improperly formatted output: %s - Bytes: [%+v]", string(data), data)
+		}
+		values, err := method.Outputs.UnpackValues(data)
+		if err != nil {
+			return nil, err
+		}
+		var result = make([]string, len(values))
+		for i := range values {
+			result[i] = fmt.Sprintf("%v", values[i])
+		}
+		return result, nil
+	}
+	if event, ok := abi.Events[name]; ok {
+		values, err := event.Inputs.UnpackValues(data)
+		if err != nil {
+			return nil, err
+		}
+		var result = make([]string, len(values))
+		for i := range values {
+			result[i] = fmt.Sprintf("%v", values[i])
+		}
+		return result, nil
+	}
+	return nil, fmt.Errorf("abi: could not locate named method or event")
 }
 
 // UnpackIntoMap unpacks a log into the provided map[string]interface{}

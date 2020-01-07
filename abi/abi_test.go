@@ -658,6 +658,15 @@ func TestBareEvents(t *testing.T) {
 	}
 }
 
+func TestUnpackValues(t *testing.T) {
+	const abiJSON = `[{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"add","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"get","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[],"name":"info","outputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"set","outputs":[{"internalType":"bool","name":"","type":"bool"}],"stateMutability":"nonpayable","type":"function"},{"inputs":[{"internalType":"uint256","name":"amount","type":"uint256"}],"name":"sub","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"nonpayable","type":"function"}]`
+	abi, err := JSON(strings.NewReader(abiJSON))
+	require.NoError(t, err)
+	data, err := hex.DecodeString("0000000000000000000000000000000000000000000000000000000000000014")
+	values, err := abi.UnpackValues("get", data)
+	require.EqualValues(t, []string{"20"}, values)
+}
+
 // TestUnpackEvent is based on this contract:
 //    contract T {
 //      event received(address sender, uint amount, bytes memo);
