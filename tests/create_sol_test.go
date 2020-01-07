@@ -31,7 +31,7 @@ func TestCreateSol(t *testing.T) {
 }
 
 func callCreate(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payload []byte, gasCost uint64) {
-	var gasQuota uint64 = 100000
+	var gasQuota uint64 = 1000000
 	var gas = gasQuota
 	output, err := evm.New(bc, db, &evm.Context{
 		Input: payload,
