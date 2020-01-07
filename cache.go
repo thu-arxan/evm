@@ -19,7 +19,6 @@ type Cache struct {
 type accountInfo struct {
 	account Account
 	storage map[string][]byte
-	removed bool
 	updated bool
 }
 
@@ -36,7 +35,7 @@ func (cache *Cache) Exist(addr Address) bool {
 	key := addressToString(addr)
 	if util.Contain(cache.accounts, key) {
 		info := cache.accounts[key]
-		if info.updated || info.removed || !isEmptyAccount(info.account) {
+		if info.updated || info.account.HasSuicide() || !isEmptyAccount(info.account) {
 			return true
 		}
 		// maybe a cache of default account, we need to ask underlying database to figure out if the account exist
@@ -46,11 +45,8 @@ func (cache *Cache) Exist(addr Address) bool {
 
 // HasSuicide return if an account has suicide
 func (cache *Cache) HasSuicide(addr Address) bool {
-	key := addressToString(addr)
-	if util.Contain(cache.accounts, key) {
-		return cache.accounts[key].removed
-	}
-	return cache.db.HasSuicide(addr)
+	info := cache.get(addr)
+	return info.account.HasSuicide()
 }
 
 // GetAccount return the account of address
@@ -61,7 +57,7 @@ func (cache *Cache) GetAccount(addr Address) Account {
 // UpdateAccount set account
 func (cache *Cache) UpdateAccount(account Account) error {
 	accInfo := cache.get(account.GetAddress())
-	if accInfo.removed {
+	if accInfo.account.HasSuicide() {
 		return fmt.Errorf("UpdateAccount on a removed account: %s", account.GetAddress())
 	}
 	accInfo.account = account
@@ -72,10 +68,7 @@ func (cache *Cache) UpdateAccount(account Account) error {
 // Suicide remove an account
 func (cache *Cache) Suicide(address Address) error {
 	accInfo := cache.get(address)
-	if accInfo.removed {
-		return fmt.Errorf("RemoveAccount on a removed account: %s", address)
-	}
-	accInfo.removed = true
+	accInfo.account.Suicide()
 	return nil
 }
 
@@ -120,9 +113,7 @@ func (cache *Cache) AddLog(log *Log) {
 func (cache *Cache) Sync() {
 	wb := cache.db.NewWriteBatch()
 	for _, info := range cache.accounts {
-		if info.removed {
-			wb.Suicide(info.account.GetAddress())
-		} else if info.updated {
+		if info.updated {
 			wb.UpdateAccount(info.account)
 			for key, value := range info.storage {
 				wb.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
@@ -147,7 +138,6 @@ func (cache *Cache) get(address Address) *accountInfo {
 	cache.accounts[key] = &accountInfo{
 		account: account,
 		storage: make(map[string][]byte),
-		removed: false,
 		updated: false,
 	}
 

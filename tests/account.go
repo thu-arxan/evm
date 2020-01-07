@@ -11,6 +11,7 @@ type Account struct {
 	code    []byte
 	balance uint64
 	nonce   uint64
+	suicide bool
 }
 
 // NewAccount is the constructor of Account
@@ -70,4 +71,14 @@ func (a *Account) GetNonce() uint64 {
 // SetNonce is the implementation of interface
 func (a *Account) SetNonce(nonce uint64) {
 	a.nonce = nonce
+}
+
+// Suicide is the implementation of interface
+func (a *Account) Suicide() {
+	a.suicide = true
+}
+
+// HasSuicide is the implementation of interface
+func (a *Account) HasSuicide() bool {
+	return a.suicide
 }

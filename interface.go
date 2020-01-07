@@ -16,6 +16,9 @@ type Account interface {
 	GetCodeHash() []byte
 	GetNonce() uint64
 	SetNonce(nonce uint64)
+	// Suicide will suicide an account
+	Suicide()
+	HasSuicide() bool
 }
 
 // Address describe what functions that an Address implementation should provide
@@ -31,7 +34,6 @@ type DB interface {
 	// Exist return if the account exist
 	// Note: if account is suicided, return true
 	Exist(address Address) bool
-	HasSuicide(address Address) bool
 	// GetStorage return a default account if unexist
 	GetAccount(address Address) Account
 	// Note: GetStorage return nil if key is not exist
@@ -43,8 +45,6 @@ type DB interface {
 type WriteBatch interface {
 	SetStorage(address Address, key core.Word256, value []byte)
 	UpdateAccount(account Account) error
-	// Remove the account at address
-	Suicide(address Address) error
 	AddLog(log *Log)
 }
 
