@@ -854,6 +854,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			input, _ := memory.Read(offset, size)
 
 			// apply EIP150
+			maybe.PushError(useGasNegative(ctx.Gas, gas.Create))
 			*ctx.Gas -= *ctx.Gas / 64
 
 			var newAccountAddress Address
