@@ -854,7 +854,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				if newAccountAddress == nil {
 					newAccountAddress = defaultCreateAddress(callee, evm.cache.GetNonce(callee), evm.bc.BytesToAddress)
 				}
-				calleeAccount := evm.cache.GetAccount(caller)
+				calleeAccount := evm.cache.GetAccount(callee)
 				calleeAccount.SetNonce(evm.cache.GetNonce(callee) + 1)
 				evm.cache.UpdateAccount(calleeAccount)
 			} else if op == CREATE2 {
