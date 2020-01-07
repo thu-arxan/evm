@@ -33,6 +33,20 @@ func NewMemory(accountFunc func(address evm.Address) evm.Account) *Memory {
 	}
 }
 
+// InitBalance init balance for testting, and return error if the account exsit aleardy
+func (m *Memory) InitBalance(address evm.Address, balance uint64) error {
+	key := string(address.Bytes())
+	if util.Contain(m.accounts, key) {
+		return errors.New("initial balance on an exist account")
+	}
+	account := m.accountFunc(address)
+	account.AddBalance(balance)
+	m.accounts[key] = &accountInfo{
+		account: account,
+	}
+	return nil
+}
+
 // Exist is the implementation of interface
 func (m *Memory) Exist(address evm.Address) bool {
 	key := string(address.Bytes())
