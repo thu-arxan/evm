@@ -876,9 +876,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			// record old ctx
 			prevInput := ctx.Input
 			prevValue := ctx.Value
-			ctx.Input = input
+			ctx.Input = nil
 			ctx.Value = contractValue
-			ret, callErr := evm.Call(callee, newAccountAddress, code)
+			ret, callErr := evm.Call(callee, newAccountAddress, input)
 			ctx.Input = prevInput
 			ctx.Value = prevValue
 			if callErr != nil {
