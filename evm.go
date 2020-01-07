@@ -164,6 +164,14 @@ func (evm *EVM) transfer(caller, callee Address, value uint64) error {
 		return err
 	}
 
+	if err := evm.cache.UpdateAccount(from); err != nil {
+		return err
+	}
+
+	if err := evm.cache.UpdateAccount(to); err != nil {
+		return err
+	}
+
 	return nil
 }
 

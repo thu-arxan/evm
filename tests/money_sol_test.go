@@ -37,8 +37,13 @@ func TestMoneySol(t *testing.T) {
 	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "add"), 10, 99, 0)
 	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
 	require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000014", fmt.Sprintf("%x", result))
-	// then we will call withpayload empty
+	// then we will call withpayload empty and contract money is 30, while user is 70
 	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, nil, 10, 57, 0)
-	// todo: figure out the which value should be
-	// require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000014", fmt.Sprintf("%x", result))
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
+	require.Equal(t, "000000000000000000000000000000000000000000000000000000000000001e", fmt.Sprintf("%x", result))
+	require.EqualValues(t, 70, memoryDB.GetAccount(user).GetBalance())
+	// destory
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "destory"), 5143, 0)
+	require.Len(t, result, 0)
+	require.EqualValues(t, 100, memoryDB.GetAccount(user).GetBalance())
 }
