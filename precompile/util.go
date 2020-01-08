@@ -1,6 +1,6 @@
 package precompile
 
-import "madledger/common"
+import "evm/util"
 
 func allZero(b []byte) bool {
 	for _, byte := range b {
@@ -22,5 +22,5 @@ func getData(data []byte, start uint64, size uint64) []byte {
 	if end > length {
 		end = length
 	}
-	return common.RightPadBytes(data[start:end], int(size))
+	return util.RightPadBytes(data[start:end], int(size))
 }

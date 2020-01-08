@@ -1,8 +1,8 @@
 package precompile
 
 import (
+	"evm/util"
 	"evm/util/math"
-	"madledger/common"
 	"math/big"
 
 	g "evm/gas"
@@ -108,7 +108,7 @@ func (c *bigModExp) Run(input []byte) ([]byte, error) {
 	)
 	if mod.BitLen() == 0 {
 		// Modulo 0 is undefined, return zero
-		return common.LeftPadBytes([]byte{}, int(modLen)), nil
+		return util.LeftPadBytes([]byte{}, int(modLen)), nil
 	}
-	return common.LeftPadBytes(base.Exp(base, exp, mod).Bytes(), int(modLen)), nil
+	return util.LeftPadBytes(base.Exp(base, exp, mod).Bytes(), int(modLen)), nil
 }
