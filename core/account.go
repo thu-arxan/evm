@@ -1,5 +1,11 @@
 package core
 
+import (
+	"errors"
+	"evm/crypto"
+	"evm/util/math"
+)
+
 // Account defines an account structure
 type Account struct {
 	address *Address
@@ -26,16 +32,22 @@ func (a *Account) GetBalance() uint64 {
 }
 
 // AddBalance add balance
-// todo: if overflow
 func (a *Account) AddBalance(balance uint64) error {
-	a.balance += balance
+	sum, overflow := math.SafeAdd(a.balance, balance)
+	if overflow {
+		return errors.New("overflow")
+	}
+	a.balance = sum
 	return nil
 }
 
 // SubBalance sub balance
-// todo: avoid overflow
 func (a *Account) SubBalance(balance uint64) error {
-	a.balance -= balance
+	sub, overflow := math.SafeSub(a.balance, balance)
+	if overflow {
+		return errors.New("insufficient balance")
+	}
+	a.balance = sub
 	return nil
 }
 
@@ -50,9 +62,8 @@ func (a *Account) SetCode(code []byte) {
 }
 
 // GetCodeHash return the hash of code
-// todo: not implementation yet
 func (a *Account) GetCodeHash() []byte {
-	return nil
+	return crypto.Keccak256(a.code)
 }
 
 // GetNonce return the nonce of account
