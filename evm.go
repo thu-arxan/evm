@@ -898,6 +898,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
 				createDataGas := uint64(len(ret)) * gas.CreateData
+				log.Debugf("=> [%d] %v\n", len(ret), createDataGas)
 				maybe.PushError(useGasNegative(ctx.Gas, createDataGas))
 				if maybe.Error() == nil {
 					newAccount := evm.getAccount(newAccountAddress)
