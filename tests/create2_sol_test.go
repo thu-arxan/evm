@@ -23,7 +23,7 @@ var (
 )
 
 func TestCreate2Sol(t *testing.T) {
-	binBytes, err := util.ReadBinFile(createBin)
+	binBytes, err := util.ReadBinFile(create2Bin)
 	require.NoError(t, err)
 	bc := example.NewBlockchain()
 	memoryDB := db.NewMemory(bc.NewAccount)
