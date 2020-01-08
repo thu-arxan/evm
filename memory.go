@@ -73,11 +73,15 @@ func (mem *dynamicMemory) calMemGas(offset, length uint64) (uint64, error) {
 	if length == 0 {
 		return 0, nil
 	}
-	// val is the number of words(32 bytes)
-	newMemSizeWords := offset + length
-	if newMemSizeWords < offset {
+	memSize := offset + length
+	if memSize < offset {
 		return 0, fmt.Errorf("new Memory overflow")
 	}
+	if memSize > math.MaxUint64-31 {
+		memSize = math.MaxUint64/32 + 1
+	}
+
+	newMemSizeWords := (memSize + 31) / 32
 	newMemSize := newMemSizeWords * 32
 	if newMemSize > 0x1FFFFFFFE0 {
 		return 0, fmt.Errorf("new Memory overflow")
@@ -134,7 +138,7 @@ func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 		return 0
 	}
 	// Calculate gasCost before resize
-	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)) / 32)
+	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)))
 	if err != nil {
 		mem.pushErr(err)
 		return 0
