@@ -60,6 +60,7 @@
 - SELFDESTRUCT
 - CREATE(需要看一下nonce)
 - BALANCE
+- CREATE2
 
 ## 2. 部分测试
 
@@ -84,6 +85,5 @@
 - GAS
 - CALLCODE
 - DELEGATECALL
-- CREATE2
 - REVERT
 - INVALID
