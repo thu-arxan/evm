@@ -1003,7 +1003,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case RETURN: // 0xF3
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Zero))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
+			log.Debugf("memory size: %d", memory.Len())
 			output, memoryGas := memory.Read(offset, size)
+			log.Debugf("memory size: %d", memory.Len())
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			return output, maybe.Error()
