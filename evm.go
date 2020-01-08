@@ -846,14 +846,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
 			// TODO: Fix the gas usage
+			if err := useGasNegative(ctx.Gas, gas.Create); err != nil {
+				return nil, err
+			}
 			returnData = nil
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
-			input, _ := memory.Read(offset, size)
+			input, memoryGas := memory.Read(offset, size)
 
 			// apply EIP150
-			maybe.PushError(useGasNegative(ctx.Gas, gas.Create))
-			*ctx.Gas -= *ctx.Gas / 64
+			if err := useGasNegative(ctx.Gas, memoryGas); err != nil {
+				return nil, err
+			}
+			gasPrev := *ctx.Gas / 64
+			*ctx.Gas -= gasPrev
 
 			var newAccountAddress Address
 			if op == CREATE {
@@ -905,6 +911,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 					newAccount.SetCode(ret)
 					stack.PushAddress(newAccountAddress)
 				}
+				*ctx.Gas += gasPrev
 			}
 
 		case CALL, CALLCODE:

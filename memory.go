@@ -41,6 +41,7 @@ type Memory interface {
 	// unused. Solidity in particular makes this assumption when using MSIZE to
 	// get the current allocated memory.
 	Capacity() *big.Int
+	Len() uint64
 }
 
 // NewDynamicMemory is the constrcutor of DynamicMemory (note that although we take a maximumCapacity of uint64 we currently
@@ -68,6 +69,41 @@ type dynamicMemory struct {
 	prevGasCost     uint64
 }
 
+func (mem *dynamicMemory) calMemGas(offset, length uint64) (uint64, error) {
+	if length == 0 {
+		return 0, nil
+	}
+	memSize := offset + length
+	if memSize < offset {
+		return 0, fmt.Errorf("new Memory overflow")
+	}
+	if memSize > math.MaxUint64-31 {
+		memSize = math.MaxUint64/32 + 1
+	}
+
+	newMemSizeWords := (memSize + 31) / 32
+	newMemSize := newMemSizeWords * 32
+	if newMemSize > 0x1FFFFFFFE0 {
+		return 0, fmt.Errorf("new Memory overflow")
+	}
+	if newMemSize > uint64(len(mem.slice)) {
+		square := newMemSizeWords * newMemSizeWords
+		linCoef := newMemSizeWords * gas.Memory
+		quadCoef := square / gas.QuadCoeffDiv
+		newTotalFee := linCoef + quadCoef
+
+		fee := newTotalFee - mem.prevGasCost
+		mem.prevGasCost = newTotalFee
+
+		return fee, nil
+	}
+	return 0, nil
+}
+
+func (mem *dynamicMemory) Len() uint64 {
+	return uint64(len(mem.slice))
+}
+
 // Read is the implementation of Memory
 func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 	// Ensures positive and not too wide
@@ -80,18 +116,19 @@ func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 		mem.pushErr(fmt.Errorf("length %v does not fit inside an unsigned 64-bit integer", offset))
 		return nil, 0
 	}
+	// Calculate gasCost before resize
+	gasCost, err := mem.calMemGas(offset.Uint64(), length.Uint64())
+	if err != nil {
+		mem.pushErr(err)
+		return nil, 0
+	}
 	output, err := mem.read(offset.Uint64(), length.Uint64())
 	if err != nil {
 		mem.pushErr(err)
 		return nil, 0
 	}
-	if length.Uint64() == 0 {
-		return output, 0
-	}
-	size := uint64(len(mem.slice)+31) / 32
-	prevGasCost := mem.prevGasCost
-	mem.prevGasCost = gas.Memory*size + (size*size)/512
-	return output, mem.prevGasCost - prevGasCost
+
+	return output, gasCost
 }
 
 // Write is the implementation of Memory
@@ -101,14 +138,17 @@ func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 		mem.pushErr(fmt.Errorf("offset %v does not fit inside an unsigned 64-bit integer", offset))
 		return 0
 	}
-	err := mem.write(offset.Uint64(), value)
+	// Calculate gasCost before resize
+	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)))
+	if err != nil {
+		mem.pushErr(err)
+		return 0
+	}
+	err = mem.write(offset.Uint64(), value)
 	if err != nil {
 		mem.pushErr(err)
 	}
-	size := uint64(len(mem.slice)+31) / 32
-	prevGasCost := mem.prevGasCost
-	mem.prevGasCost = gas.Memory*size + (size*size)/512
-	return mem.prevGasCost - prevGasCost
+	return gasCost
 }
 
 // Capacity is the implementation of Memory
