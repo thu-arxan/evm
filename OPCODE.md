@@ -59,7 +59,7 @@
 - CALL
 - SELFDESTRUCT
 - CREATE(需要看一下nonce)
-
+- BALANCE
 
 ## 2. 部分测试
 
@@ -68,7 +68,6 @@
 
 ## 3. 尚未测试
 
-- BALANCE
 - STOP
 - SIGNEXTEND
 - CALLDATACOPY
