@@ -899,7 +899,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				// Update the account with its initialised contract code
 				// todo: we may need to set ancestor?
 				createDataGas := uint64(len(ret)) * gas.CreateData
-				log.Debugf("=> [%d] %v\n", len(ret), createDataGas)
 				maybe.PushError(useGasNegative(ctx.Gas, createDataGas))
 				if maybe.Error() == nil {
 					newAccount := evm.getAccount(newAccountAddress)
@@ -1006,9 +1005,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case RETURN: // 0xF3
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Zero))
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
-			log.Debugf("memory size: %d", memory.Len())
 			output, memoryGas := memory.Read(offset, size)
-			log.Debugf("memory size: %d", memory.Len())
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
 			return output, maybe.Error()

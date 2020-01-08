@@ -57,6 +57,7 @@
 - SHA3
 - LOG*
 - CALL
+- CREATE(需要看一下nonce)
 
 ## 2. 部分测试
 
@@ -80,7 +81,6 @@
 - PC
 - MSIZE
 - GAS
-- CREATE(也需要弄明白nonce变换的过程)
 - CALLCODE
 - DELEGATECALL
 - CREATE2
