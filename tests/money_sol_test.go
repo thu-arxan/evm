@@ -31,16 +31,15 @@ func TestMoneySol(t *testing.T) {
 	require.Equal(t, exceptCode, fmt.Sprintf("%x", moneyCode))
 	// then call get
 	result := callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
-	// todo: we may change the way to check result
-	require.Equal(t, "000000000000000000000000000000000000000000000000000000000000000a", fmt.Sprintf("%x", result))
+	require.EqualValues(t, []string{"10"}, mustUnpack(moneyAbi, "get", result))
 	// add value 10 and get will return 20
 	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "add"), 10, 99, 0)
 	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
-	require.Equal(t, "0000000000000000000000000000000000000000000000000000000000000014", fmt.Sprintf("%x", result))
+	require.EqualValues(t, []string{"20"}, mustUnpack(moneyAbi, "get", result))
 	// then we will call withpayload empty and contract money is 30, while user is 70
 	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, nil, 10, 57, 0)
 	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
-	require.Equal(t, "000000000000000000000000000000000000000000000000000000000000001e", fmt.Sprintf("%x", result))
+	require.EqualValues(t, []string{"30"}, mustUnpack(moneyAbi, "get", result))
 	require.EqualValues(t, 70, memoryDB.GetAccount(user).GetBalance())
 	// destory
 	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "destory"), 5143, 0)
