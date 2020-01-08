@@ -326,57 +326,51 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 	for i, v := range values {
 		input := abiArgs[i]
 		var a interface{}
-		t := input.Type.String()
+		t := input.Type.T
 		switch t {
-		case "string":
-			a = v
-		case "bool":
+		case IntTy:
+			if input.Type.Size > 64 || input.Type.Size <= 0 {
+				a, _ = big.NewInt(0).SetString(v, 10)
+			} else {
+				a64, _ := strconv.ParseInt(v, 10, 0)
+				switch (input.Type.Size - 1) / 8 {
+				case 0:
+					a = int8(a64)
+				case 1:
+					a = int16(a64)
+				case 2, 3:
+					a = int32(a64)
+				default:
+					a = int64(a64)
+				}
+			}
+		case UintTy:
+			if input.Type.Size > 64 || input.Type.Size <= 0 {
+				a, _ = big.NewInt(0).SetString(v, 10)
+			} else {
+				a64, _ := strconv.ParseUint(v, 10, 0)
+				switch (input.Type.Size - 1) / 8 {
+				case 0:
+					a = uint8(a64)
+				case 1:
+					a = uint16(a64)
+				case 2, 3:
+					a = uint32(a64)
+				default:
+					a = uint64(a64)
+				}
+			}
+		case BoolTy:
 			if strings.ReplaceAll(v, "0", "") == "" || strings.ToLower(v) == "false" {
 				a = false
 			} else {
 				a = true
 			}
+		case StringTy:
+			a = v
 		default:
-			if strings.HasPrefix(t, "uint") {
-				// todo: may be slice
-				digit, _ := strconv.ParseInt(strings.Replace(t, "uint", "", 1), 10, 0)
-				fmt.Println(digit)
-				if digit == 0 || digit > 64 {
-					a, _ = big.NewInt(0).SetString(v, 10)
-				} else {
-					a64, _ := strconv.ParseUint(v, 10, 0)
-					switch (digit - 1) / 8 {
-					case 0:
-						a = uint8(a64)
-					case 1:
-						a = uint16(a64)
-					case 2, 3:
-						a = uint32(a64)
-					default:
-						a = uint64(a64)
-					}
-				}
-			} else if strings.HasPrefix(t, "int") {
-				// todo: may be slice
-				digit, _ := strconv.ParseInt(strings.Replace(t, "int", "", 1), 10, 0)
-				if digit == 0 || digit > 64 {
-					a, _ = big.NewInt(0).SetString(v, 10)
-				} else {
-					a64, _ := strconv.ParseInt(v, 10, 0)
-					switch (digit - 1) / 8 {
-					case 0:
-						a = int8(a64)
-					case 1:
-						a = int16(a64)
-					case 2, 3:
-						a = int32(a64)
-					default:
-						a = int64(a64)
-					}
-				}
-			} else {
-				return nil, fmt.Errorf("unsupport type(%s)", t)
-			}
+			// todo: we need to support other types
+			return nil, fmt.Errorf("unsupport type(%s)", input.Type.String())
 		}
 		// pack the input
 		packed, err := input.Type.pack(reflect.ValueOf(a))
