@@ -845,7 +845,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> T:%v D:%X\n", topics, data)
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
-			// TODO: Fix the gas usage
 			if err := useGasNegative(ctx.Gas, gas.Create); err != nil {
 				return nil, err
 			}
@@ -853,7 +852,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			contractValue := stack.PopUint64()
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input, memoryGas := memory.Read(offset, size)
-
+			if op == CREATE2 {
+				//TODO: consider overflow
+				wordGas := (size.Uint64() + 31) / 32 * gas.SHA3Word
+				memoryGas += wordGas
+			}
 			// apply EIP150
 			if err := useGasNegative(ctx.Gas, memoryGas); err != nil {
 				return nil, err
