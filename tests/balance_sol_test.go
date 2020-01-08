@@ -7,7 +7,6 @@ import (
 	"evm/example"
 	"evm/util"
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -31,21 +30,21 @@ func TestBalanceSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	balanceCode, balanceAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 144400)
 	// then call the contract with get function
-	result := callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 10
+	result := callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "get"), 1096) // except 10
 	require.EqualValues(t, []string{"10"}, mustUnpack(balanceAbi, "get", result))
 	// then set value to 20
-	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "set", big.NewInt(20)), 5393) // except true
+	result = callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "set", "20"), 5393) // except true
 	require.EqualValues(t, []string{"true"}, mustUnpack(balanceAbi, "set", result))
 	// then get
-	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 20
+	result = callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "get"), 1096) // except 20
 	require.EqualValues(t, []string{"20"}, mustUnpack(balanceAbi, "get", result))
 	// then add
-	callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "add", big.NewInt(10)), 6939) // except 30
+	callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "add", "10"), 6939) // except 30
 	// then get
-	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 30
+	result = callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "get"), 1096) // except 30
 	require.EqualValues(t, []string{"30"}, mustUnpack(balanceAbi, "get", result))
 	// info
-	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "info"), 1105) // except "6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"
+	result = callBalance(t, memoryDB, bc, origin, mustPack(balanceAbi, "info"), 1105) // except "6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"
 	require.EqualValues(t, []string{"6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"}, mustUnpack(balanceAbi, "info", result))
 	// define temporary address for testing
 	var temporarySender = RandomAddress()
@@ -53,7 +52,7 @@ func TestBalanceSol(t *testing.T) {
 	abi.SetAddressParser(temporarySender.Length(), func(bytes []byte) string {
 		return BytesToAddress(bytes).String()
 	}, nil)
-	result = callBalance(t, memoryDB, temporaryBC, temporarySender, mustParsePayload(balanceAbi, "info"), 1105)
+	result = callBalance(t, memoryDB, temporaryBC, temporarySender, mustPack(balanceAbi, "info"), 1105)
 	require.EqualValues(t, []string{temporarySender.String(), "30"}, mustUnpack(balanceAbi, "info", result))
 	abi.ResetAddressParser()
 }

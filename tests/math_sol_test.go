@@ -29,7 +29,7 @@ func TestMathSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	mathCode, mathAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 246938)
 	// then call the contract with chaos function
-	result := callMath(t, memoryDB, bc, origin, mustParsePayload(mathAbi, "chaos"), 53957, 30000) // except "1"
+	result := callMath(t, memoryDB, bc, origin, mustPack(mathAbi, "chaos"), 53957, 30000) // except "1"
 	require.EqualValues(t, []string{"1"}, mustUnpack(mathAbi, "chaos", result))
 }
 

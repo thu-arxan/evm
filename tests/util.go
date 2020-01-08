@@ -96,19 +96,6 @@ func parsePayload(abiFile string, funcName string, args ...interface{}) ([]byte,
 	return abi.Pack(funcName, args...)
 }
 
-func mustParsePayload(abiFile string, funcName string, args ...interface{}) []byte {
-	abi, err := abi.New(abiFile)
-	if err != nil {
-		panic(err)
-	}
-	value, err := abi.Pack(funcName, args...)
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("payload is %x\n", value)
-	return value
-}
-
 func mustPack(abiFile, funcName string, inputs ...string) []byte {
 	values, err := abi.Pack(abiFile, funcName, inputs...)
 	if err != nil {

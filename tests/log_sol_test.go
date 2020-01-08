@@ -6,7 +6,6 @@ import (
 	"evm/example"
 	"evm/util"
 	"fmt"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -30,7 +29,7 @@ func TestLogSol(t *testing.T) {
 	var exceptAddress = `cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d`
 	logCode, logAddress = deployContract(t, memoryDB, bc, origin, binBytes, exceptAddress, exceptCode, 96759)
 	// then call the contract with appendEntry function
-	callWithPayload(t, memoryDB, bc, origin, logAddress, mustParsePayload(logAbi, "appendEntry", "money", big.NewInt(10)), 2779, 0)
+	callWithPayload(t, memoryDB, bc, origin, logAddress, mustPack(logAbi, "appendEntry", "money", "10"), 2779, 0)
 	require.Len(t, memoryDB.GetLog(), 1)
 	entry := memoryDB.GetLog()[0]
 	require.Equal(t, exceptAddress, fmt.Sprintf("%x", entry.Address.Bytes()))

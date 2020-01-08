@@ -30,15 +30,15 @@ func TestMoneySol(t *testing.T) {
 	moneyCode, moneyAddress = deployContractWithValue(t, memoryDB, bc, user, binBytes, 10, 88325)
 	require.Equal(t, exceptCode, fmt.Sprintf("%x", moneyCode))
 	// then call get
-	result := callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
+	result := callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "get"), 249, 0)
 	require.EqualValues(t, []string{"10"}, mustUnpack(moneyAbi, "get", result))
 	// add value 10 and get will return 20
-	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "add"), 10, 99, 0)
-	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
+	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "add"), 10, 99, 0)
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "get"), 249, 0)
 	require.EqualValues(t, []string{"20"}, mustUnpack(moneyAbi, "get", result))
 	// then we will call withpayload empty and contract money is 30, while user is 70
 	callWithPayloadAndValue(t, memoryDB, bc, user, moneyAddress, nil, 10, 57, 0)
-	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "get"), 249, 0)
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "get"), 249, 0)
 	require.EqualValues(t, []string{"30"}, mustUnpack(moneyAbi, "get", result))
 	require.EqualValues(t, 70, memoryDB.GetAccount(user).GetBalance())
 	var someone = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf1")
@@ -48,7 +48,7 @@ func TestMoneySol(t *testing.T) {
 	require.EqualValues(t, 20, memoryDB.GetAccount(someone).GetBalance())
 	// then we call transfer to
 	// destory
-	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustParsePayload(moneyAbi, "destory"), 5143, 0)
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "destory"), 5143, 0)
 	require.Len(t, result, 0)
 	require.EqualValues(t, 80, memoryDB.GetAccount(user).GetBalance(), fmt.Sprintf("except 80 other than %d", memoryDB.GetAccount(user).GetBalance()))
 }
