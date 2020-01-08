@@ -134,7 +134,7 @@ func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 		return 0
 	}
 	// Calculate gasCost before resize
-	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)))
+	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)) / 32)
 	if err != nil {
 		mem.pushErr(err)
 		return 0
