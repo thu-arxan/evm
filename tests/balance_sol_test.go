@@ -52,7 +52,7 @@ func TestBalanceSol(t *testing.T) {
 	var temporaryBC = NewBlockchain()
 	abi.SetAddressParser(temporarySender.Length(), func(bytes []byte) string {
 		return BytesToAddress(bytes).String()
-	})
+	}, nil)
 	result = callBalance(t, memoryDB, temporaryBC, temporarySender, mustParsePayload(balanceAbi, "info"), 1105)
 	require.EqualValues(t, []string{temporarySender.String(), "30"}, mustUnpack(balanceAbi, "info", result))
 	abi.ResetAddressParser()

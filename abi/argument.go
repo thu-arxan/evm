@@ -1,6 +1,7 @@
 package abi
 
 import (
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"math/big"
@@ -368,6 +369,16 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 			}
 		case StringTy:
 			a = v
+		case AddressTy:
+			var err error
+			if stringToAddress == nil {
+				a, err = hex.DecodeString(v)
+			} else {
+				a, err = stringToAddress(v)
+			}
+			if err != nil {
+				return nil, err
+			}
 		default:
 			// todo: we need to support other types
 			return nil, fmt.Errorf("unsupport type(%s)", input.Type.String())
