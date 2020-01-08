@@ -6,7 +6,6 @@ import (
 	"evm/example"
 	"evm/util"
 	"madledger/common"
-	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/require"
