@@ -695,7 +695,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedEvent struct {
-		Sender core.Address
+		Sender []byte
 		Amount *big.Int
 		Memo   []byte
 	}
@@ -707,7 +707,7 @@ func TestUnpackEvent(t *testing.T) {
 	}
 
 	type ReceivedAddrEvent struct {
-		Sender core.Address
+		Sender []byte
 	}
 	var receivedAddrEv ReceivedAddrEvent
 	err = abi.Unpack(&receivedAddrEv, "receivedAddr", data)
@@ -746,9 +746,7 @@ func TestUnpackEventIntoMap(t *testing.T) {
 	if len(receivedMap) != 3 {
 		t.Error("unpacked `received` map expected to have length 3")
 	}
-	if receivedMap["sender"] != expectedReceivedMap["sender"] {
-		t.Error("unpacked `received` map does not match expected map")
-	}
+	require.EqualValues(t, fmt.Sprintf("%v", expectedReceivedMap["sender"]), fmt.Sprintf("%v", receivedMap["sender"]))
 	if receivedMap["amount"].(*big.Int).Cmp(expectedReceivedMap["amount"].(*big.Int)) != 0 {
 		t.Error("unpacked `received` map does not match expected map")
 	}
@@ -763,9 +761,7 @@ func TestUnpackEventIntoMap(t *testing.T) {
 	if len(receivedAddrMap) != 1 {
 		t.Error("unpacked `receivedAddr` map expected to have length 1")
 	}
-	if receivedAddrMap["sender"] != expectedReceivedMap["sender"] {
-		t.Error("unpacked `receivedAddr` map does not match expected map")
-	}
+	require.EqualValues(t, fmt.Sprintf("%v", expectedReceivedMap["sender"]), fmt.Sprintf("%v", receivedAddrMap["sender"]))
 }
 
 func TestUnpackMethodIntoMap(t *testing.T) {
@@ -892,9 +888,7 @@ func TestUnpackIntoMapNamingConflict(t *testing.T) {
 	if len(receivedMap) != 3 {
 		t.Error("unpacked `received` map expected to have length 3")
 	}
-	if receivedMap["sender"] != expectedReceivedMap["sender"] {
-		t.Error("unpacked `received` map does not match expected map")
-	}
+	require.Equal(t, fmt.Sprintf("%v", expectedReceivedMap["sender"]), fmt.Sprintf("%v", receivedMap["sender"]))
 	if receivedMap["amount"].(*big.Int).Cmp(expectedReceivedMap["amount"].(*big.Int)) != 0 {
 		t.Error("unpacked `received` map does not match expected map")
 	}

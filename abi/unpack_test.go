@@ -113,7 +113,7 @@ var unpackTests = []unpackTest{
 	{
 		def:  `[{"type": "address"}]`,
 		enc:  "0000000000000000000000000100000000000000000000000000000000000000",
-		want: core.Address{1},
+		want: util.BytesCombine([]byte{1}, make([]byte, addressLength-1)),
 	},
 	// Bytes
 	{
@@ -628,9 +628,9 @@ func TestMultiReturnWithStringArray(t *testing.T) {
 	buff.Write(util.Hex2Bytes("000000000000000000000000000000000000000000000000000000005c1b78ea0000000000000000000000000000000000000000000000000000000000000006000000000000000000000000000000000000000000000001a055690d9db80000000000000000000000000000ab1257528b3782fb40d7ed5f72e624b744dffb2f00000000000000000000000000000000000000000000000000000000000000c00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000004000000000000000000000000000000000000000000000000000000000000000800000000000000000000000000000000000000000000000000000000000000008457468657265756d000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000001048656c6c6f2c20457468657265756d2100000000000000000000000000000000"))
 	temp, _ := big.NewInt(0).SetString("30000000000000000000", 10)
 	ret1, ret1Exp := new([3]*big.Int), [3]*big.Int{big.NewInt(1545304298), big.NewInt(6), temp}
-	addr, err := core.HexToAddress("ab1257528b3782fb40d7ed5f72e624b744dffb2f")
+	addr, err := util.HexToBytes("ab1257528b3782fb40d7ed5f72e624b744dffb2f")
 	require.NoError(t, err)
-	ret2, ret2Exp := new(core.Address), addr
+	ret2, ret2Exp := new([]byte), addr
 	ret3, ret3Exp := new([2]string), [2]string{"Ethereum", "Hello, Ethereum!"}
 	ret4, ret4Exp := new(bool), false
 	if err := abi.Unpack(&[]interface{}{ret1, ret2, ret3, ret4}, "multi", buff.Bytes()); err != nil {
@@ -909,7 +909,7 @@ func TestUnmarshal(t *testing.T) {
 	buff.Write(util.Hex2Bytes("0000000000000000000000000000000000000000000000000000000000000001")) // size
 	buff.Write(util.Hex2Bytes("0000000000000000000000000100000000000000000000000000000000000000"))
 
-	var outAddr []core.Address
+	var outAddr [][]byte
 	err = abi.Unpack(&outAddr, "addressSliceSingle", buff.Bytes())
 	if err != nil {
 		t.Fatal("didn't expect error:", err)
@@ -919,8 +919,8 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddr))
 	}
 
-	if outAddr[0] != (core.Address{1}) {
-		t.Errorf("expected %x, got %x", core.Address{1}, outAddr[0])
+	if !bytes.Equal(outAddr[0], util.BytesCombine([]byte{1}, make([]byte, addressLength-1))) {
+		t.Errorf("expected %x, got %x", []byte{1}, outAddr[0])
 	}
 
 	// marshal multiple address slice
@@ -934,8 +934,8 @@ func TestUnmarshal(t *testing.T) {
 	buff.Write(util.Hex2Bytes("0000000000000000000000000300000000000000000000000000000000000000"))
 
 	var outAddrStruct struct {
-		A []core.Address
-		B []core.Address
+		A [][]byte
+		B [][]byte
 	}
 	err = abi.Unpack(&outAddrStruct, "addressSliceDouble", buff.Bytes())
 	if err != nil {
@@ -946,19 +946,19 @@ func TestUnmarshal(t *testing.T) {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.A))
 	}
 
-	if outAddrStruct.A[0] != (core.Address{1}) {
-		t.Errorf("expected %x, got %x", core.Address{1}, outAddrStruct.A[0])
+	if !bytes.Equal(outAddrStruct.A[0], util.BytesCombine([]byte{1}, make([]byte, addressLength-1))) {
+		t.Errorf("expected %x, got %x", []byte{1}, outAddrStruct.A[0])
 	}
 
 	if len(outAddrStruct.B) != 2 {
 		t.Fatal("expected 1 item, got", len(outAddrStruct.B))
 	}
 
-	if outAddrStruct.B[0] != (core.Address{2}) {
-		t.Errorf("expected %x, got %x", core.Address{2}, outAddrStruct.B[0])
+	if !bytes.Equal(outAddrStruct.B[0], util.BytesCombine([]byte{2}, make([]byte, addressLength-1))) {
+		t.Errorf("expected %x, got %x", []byte{2}, outAddrStruct.B[0])
 	}
-	if outAddrStruct.B[1] != (core.Address{3}) {
-		t.Errorf("expected %x, got %x", core.Address{3}, outAddrStruct.B[1])
+	if !bytes.Equal(outAddrStruct.B[1], util.BytesCombine([]byte{3}, make([]byte, addressLength-1))) {
+		t.Errorf("expected %x, got %x", []byte{3}, outAddrStruct.B[1])
 	}
 
 	// marshal invalid address slice

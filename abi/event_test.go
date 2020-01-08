@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"evm/core"
 	"evm/util"
 	"math/big"
 	"reflect"
@@ -176,7 +175,7 @@ func TestEventTupleUnpack(t *testing.T) {
 	}
 
 	type EventPledge struct {
-		Who      core.Address
+		Who      []byte
 		Wad      *big.Int
 		Currency [3]byte
 	}
@@ -197,7 +196,7 @@ func TestEventTupleUnpack(t *testing.T) {
 	bigintExpected := big.NewInt(1000000)
 	bigintExpected2 := big.NewInt(2218516807680)
 	bigintExpected3 := big.NewInt(1000001)
-	addr, err := core.HexToAddress("0x00Ce0d46d924CC8437c806721496599FC3FFA268")
+	addr, err := util.HexToBytes("0x00Ce0d46d924CC8437c806721496599FC3FFA268")
 	require.NoError(t, err)
 	var testCases = []struct {
 		data     string
@@ -260,7 +259,7 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack Pledge event into structure",
 	}, {
 		pledgeData1,
-		&[]interface{}{&core.Address{}, &bigint, &[3]byte{}},
+		&[]interface{}{&[]byte{}, &bigint, &[3]byte{}},
 		&[]interface{}{
 			&addr,
 			&bigintExpected2,
@@ -270,7 +269,7 @@ func TestEventTupleUnpack(t *testing.T) {
 		"Can unpack Pledge event into slice",
 	}, {
 		pledgeData1,
-		&[3]interface{}{&core.Address{}, &bigint, &[3]byte{}},
+		&[3]interface{}{&[]byte{}, &bigint, &[3]byte{}},
 		&[3]interface{}{
 			&addr,
 			&bigintExpected2,
@@ -283,18 +282,18 @@ func TestEventTupleUnpack(t *testing.T) {
 		&[]interface{}{new(int), 0, 0},
 		&[]interface{}{},
 		jsonEventPledge,
-		"abi: cannot unmarshal core.Address in to int",
+		"abi: cannot unmarshal []uint8 in to int",
 		"Can not unpack Pledge event into slice with wrong types",
 	}, {
 		pledgeData1,
 		&BadEventPledge{},
 		&BadEventPledge{},
 		jsonEventPledge,
-		"abi: cannot unmarshal core.Address in to string",
+		"abi: cannot unmarshal []uint8 in to string",
 		"Can not unpack Pledge event into struct with wrong filed types",
 	}, {
 		pledgeData1,
-		&[]interface{}{core.Address{}, new(big.Int)},
+		&[]interface{}{[]byte{}, new(big.Int)},
 		&[]interface{}{},
 		jsonEventPledge,
 		"abi: insufficient number of elements in the list/array for unpack, want 3, got 2",

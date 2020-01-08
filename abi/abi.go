@@ -119,7 +119,18 @@ func (abi ABI) UnpackValues(name string, data []byte) ([]string, error) {
 		}
 		var result = make([]string, len(values))
 		for i := range values {
-			result[i] = fmt.Sprintf("%v", values[i])
+			var t = method.Outputs[i].Type
+			switch t.T {
+			case AddressTy:
+				address := values[i].([]byte)
+				if addressToString == nil {
+					result[i] = fmt.Sprintf("%x", address)
+				} else {
+					result[i] = addressToString(address)
+				}
+			default:
+				result[i] = fmt.Sprintf("%v", values[i])
+			}
 		}
 		return result, nil
 	}

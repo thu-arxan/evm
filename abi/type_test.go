@@ -2,6 +2,7 @@ package abi
 
 import (
 	"evm/core"
+	"evm/util"
 	"math/big"
 	"reflect"
 	"testing"
@@ -70,8 +71,8 @@ func TestTypeRegexp(t *testing.T) {
 		{"string[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]string{}), Elem: &Type{Kind: reflect.String, Type: reflect.TypeOf(""), T: StringTy, stringKind: "string"}, stringKind: "string[]"}},
 		{"string[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]string{}), Elem: &Type{Kind: reflect.String, T: StringTy, Type: reflect.TypeOf(""), stringKind: "string"}, stringKind: "string[2]"}},
 		{"address", nil, Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}},
-		{"address[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([]core.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
-		{"address[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2]core.Address{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
+		{"address[]", nil, Type{T: SliceTy, Kind: reflect.Slice, Type: reflect.TypeOf([][]byte{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[]"}},
+		{"address[2]", nil, Type{Kind: reflect.Array, T: ArrayTy, Size: 2, Type: reflect.TypeOf([2][]byte{}), Elem: &Type{Kind: reflect.Array, Type: addressT, Size: 20, T: AddressTy, stringKind: "address"}, stringKind: "address[2]"}},
 		// TODO when fixed types are implemented properly
 		// {"fixed", nil, Type{}},
 		// {"fixed128x128", nil, Type{}},
@@ -195,10 +196,10 @@ func TestTypeCheck(t *testing.T) {
 		{"uint16[3]", nil, [4]uint16{1, 2, 3}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
 		{"uint16[3]", nil, []uint16{1, 2, 3}, ""},
 		{"uint16[3]", nil, []uint16{1, 2, 3, 4}, "abi: cannot use [4]uint16 as type [3]uint16 as argument"},
-		{"address[]", nil, []core.Address{{1}}, ""},
-		{"address[1]", nil, []core.Address{{1}}, ""},
-		{"address[1]", nil, [1]core.Address{{1}}, ""},
-		{"address[2]", nil, [1]core.Address{{1}}, "abi: cannot use [1]array as type [2]array as argument"},
+		{"address[]", nil, [][]byte{{1}}, ""},
+		{"address[1]", nil, [][]byte{{1}}, ""},
+		{"address[1]", nil, [1][]byte{{1}}, ""}, // todo: this is not right
+		{"address[2]", nil, [1][]byte{util.FixBytesLength([]byte{1}, addressLength)}, "abi: cannot use [1]slice as type [2]array as argument"},
 		{"bytes32", nil, [32]byte{}, ""},
 		{"bytes31", nil, [31]byte{}, ""},
 		{"bytes30", nil, [30]byte{}, ""},
@@ -243,9 +244,9 @@ func TestTypeCheck(t *testing.T) {
 		{"string", nil, []byte{}, "abi: cannot use slice as type string as argument"},
 		{"bytes32[]", nil, [][32]byte{{}}, ""},
 		{"function", nil, [24]byte{}, ""},
-		{"bytes20", nil, core.Address{}, ""},
-		{"address", nil, [20]byte{}, ""},
-		{"address", nil, core.Address{}, ""},
+		{"bytes20", nil, [20]byte{}, ""},
+		{"address", nil, util.FixBytesLength([]byte{1}, addressLength), ""},
+		{"address", nil, util.FixBytesLength([]byte{1}, addressLength), ""},
 		{"bytes32[]]", nil, "", "invalid arg type in abi"},
 		{"invalidType", nil, "", "unsupported arg type: invalidType"},
 		{"invalidSlice[]", nil, "", "unsupported arg type: invalidSlice"},

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"evm/core"
 	"evm/util"
+	"fmt"
 	"math"
 	"math/big"
 	"reflect"
@@ -339,7 +340,7 @@ func TestPack(t *testing.T) {
 		{
 			"address[]",
 			nil,
-			[]core.Address{{1}, {2}},
+			[][]byte{util.BytesCombine([]byte{1}, make([]byte, addressLength-1)), util.BytesCombine([]byte{2}, make([]byte, addressLength-1))},
 			util.Hex2Bytes("000000000000000000000000000000000000000000000000000000000000000200000000000000000000000001000000000000000000000000000000000000000000000000000000000000000200000000000000000000000000000000000000"),
 		},
 		{
@@ -470,8 +471,8 @@ func TestPack(t *testing.T) {
 				C      []byte
 				D      []string
 				E      []*big.Int
-				F      []core.Address
-			}{"foobar", 1, []byte{1}, []string{"foo", "bar"}, []*big.Int{big.NewInt(1), big.NewInt(-1)}, []core.Address{{1}, {2}}},
+				F      [][]byte
+			}{"foobar", 1, []byte{1}, []string{"foo", "bar"}, []*big.Int{big.NewInt(1), big.NewInt(-1)}, [][]byte{util.BytesCombine([]byte{1}, make([]byte, addressLength-1)), util.BytesCombine([]byte{2}, make([]byte, addressLength-1))}},
 			util.Hex2Bytes("00000000000000000000000000000000000000000000000000000000000000c0" + // struct[a] offset
 				"0000000000000000000000000000000000000000000000000000000000000001" + // struct[b]
 				"0000000000000000000000000000000000000000000000000000000000000100" + // struct[c] offset
@@ -493,8 +494,8 @@ func TestPack(t *testing.T) {
 				"0000000000000000000000000000000000000000000000000000000000000001" + // 1
 				"ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff" + // -1
 				"0000000000000000000000000000000000000000000000000000000000000002" + // struct[f] length
-				"0000000000000000000000000100000000000000000000000000000000000000" + // core.Address{1}
-				"0000000000000000000000000200000000000000000000000000000000000000"), // core.Address{2}
+				"0000000000000000000000000100000000000000000000000000000000000000" + // []byte{1}
+				"0000000000000000000000000200000000000000000000000000000000000000"), // []byte{2}
 		},
 		{
 			// nested tuple
@@ -603,11 +604,13 @@ func TestPack(t *testing.T) {
 		}
 		output, err := typ.pack(reflect.ValueOf(test.input))
 		if err != nil {
+			fmt.Printf("input is %v", test.input)
 			t.Fatalf("%v failed. Unexpected pack error: %v", i, err)
 		}
 
 		if !bytes.Equal(output, test.output) {
-			t.Errorf("input %d for typ: %v failed. Expected bytes: '%x' Got: '%x'", i, typ.String(), test.output, output)
+			fmt.Printf("input is %v\n", test.input)
+			t.Errorf("input %v for typ: %v failed. Expected bytes: '%x' Got: '%x'", test.input, typ.String(), test.output, output)
 		}
 	}
 }
@@ -631,14 +634,14 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrA, addrB = core.Address{1}, core.Address{2}
+	var addrA, addrB = util.FixBytesLength([]byte{1}, addressLength), util.FixBytesLength([]byte{2}, addressLength)
 	sig = abi.Methods["sliceAddress"].ID()
 	sig = append(sig, util.LeftPadBytes([]byte{32}, 32)...)
 	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
 	sig = append(sig, util.LeftPadBytes(addrA[:], 32)...)
 	sig = append(sig, util.LeftPadBytes(addrB[:], 32)...)
 
-	packed, err = abi.Pack("sliceAddress", []core.Address{addrA, addrB})
+	packed, err = abi.Pack("sliceAddress", [][]byte{addrA, addrB})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -646,7 +649,7 @@ func TestMethodPack(t *testing.T) {
 		t.Errorf("expected %x got %x", sig, packed)
 	}
 
-	var addrC, addrD = core.Address{3}, core.Address{4}
+	var addrC, addrD = util.FixBytesLength([]byte{3}, addressLength), util.FixBytesLength([]byte{4}, addressLength)
 	sig = abi.Methods["sliceMultiAddress"].ID()
 	sig = append(sig, util.LeftPadBytes([]byte{64}, 32)...)
 	sig = append(sig, util.LeftPadBytes([]byte{160}, 32)...)
@@ -657,7 +660,7 @@ func TestMethodPack(t *testing.T) {
 	sig = append(sig, util.LeftPadBytes(addrC[:], 32)...)
 	sig = append(sig, util.LeftPadBytes(addrD[:], 32)...)
 
-	packed, err = abi.Pack("sliceMultiAddress", []core.Address{addrA, addrB}, []core.Address{addrC, addrD})
+	packed, err = abi.Pack("sliceMultiAddress", [][]byte{addrA, addrB}, [][]byte{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -688,7 +691,7 @@ func TestMethodPack(t *testing.T) {
 	sig = append(sig, util.LeftPadBytes([]byte{2}, 32)...)
 	sig = append(sig, util.LeftPadBytes(addrC[:], 32)...)
 	sig = append(sig, util.LeftPadBytes(addrD[:], 32)...)
-	packed, err = abi.Pack("nestedArray", a, []core.Address{addrC, addrD})
+	packed, err = abi.Pack("nestedArray", a, [][]byte{addrC, addrD})
 	if err != nil {
 		t.Fatal(err)
 	}

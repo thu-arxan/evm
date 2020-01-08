@@ -39,7 +39,10 @@ func sliceTypeCheck(t Type, val reflect.Value) error {
 	}
 
 	if elemKind := val.Type().Elem().Kind(); elemKind != t.Elem.Kind {
-		return typeErr(formatSliceString(t.Elem.Kind, t.Size), val.Type())
+		if t.Elem.T != AddressTy {
+			return typeErr(formatSliceString(t.Elem.Kind, t.Size), val.Type())
+		}
+
 	}
 	return nil
 }
@@ -49,6 +52,13 @@ func sliceTypeCheck(t Type, val reflect.Value) error {
 func typeCheck(t Type, value reflect.Value) error {
 	if t.T == SliceTy || t.T == ArrayTy {
 		return sliceTypeCheck(t, value)
+	}
+
+	if t.T == AddressTy {
+		if addressLength != value.Len() {
+			return fmt.Errorf("abi: except address length %d other than %d", addressLength, value.Len())
+		}
+		return nil
 	}
 
 	// Check base type validity. Element types will be checked later on.

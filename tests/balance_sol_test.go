@@ -33,8 +33,8 @@ func TestBalanceSol(t *testing.T) {
 	result := callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 10
 	require.EqualValues(t, []string{"10"}, mustUnpack(balanceAbi, "get", result))
 	// then set value to 20
-	callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "set", big.NewInt(20)), 5393) // except true
-	// todo: unpack works bad in bool
+	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "set", big.NewInt(20)), 5393) // except true
+	require.EqualValues(t, []string{"true"}, mustUnpack(balanceAbi, "set", result))
 	// then get
 	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 20
 	require.EqualValues(t, []string{"20"}, mustUnpack(balanceAbi, "get", result))
@@ -44,7 +44,8 @@ func TestBalanceSol(t *testing.T) {
 	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "get"), 1096) // except 30
 	require.EqualValues(t, []string{"30"}, mustUnpack(balanceAbi, "get", result))
 	// info
-	callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "info"), 1105) // except "6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"
+	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "info"), 1105) // except "6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"
+	require.EqualValues(t, []string{"6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"}, mustUnpack(balanceAbi, "info", result))
 	// define temporary address for testing
 	// todo:
 	// var temporarySender = RandomAddress()
