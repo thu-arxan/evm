@@ -915,6 +915,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 			var gasLimit = stack.PopUint64()
 			gasLimit = callGas(*ctx.Gas, gasLimit)
+			maybe.PushError(useGasNegative(ctx.Gas, gasLimit))
 
 			target, value := stack.PopAddress(), stack.PopUint64()
 			inOffset, inSize := stack.PopBigInt(), stack.PopBigInt()
@@ -924,10 +925,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				if op == CALL && isEmptyAccount(evm.getAccount(target)) {
 					useGasNegative(ctx.Gas, gas.CallNewAccount)
 				}
+				gasLimit += gas.CallStipend
 			}
 			input, memoryGas := memory.Read(inOffset, inSize)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
-			maybe.PushError(useGasNegative(ctx.Gas, gasLimit))
+
 			// store prev ctx
 			prevInput := evm.ctx.Input
 			prevValue := evm.ctx.Value

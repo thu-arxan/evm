@@ -85,6 +85,9 @@ func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 		mem.pushErr(err)
 		return nil, 0
 	}
+	if length.Uint64() == 0 {
+		return output, 0
+	}
 	size := uint64(len(mem.slice)+31) / 32
 	prevGasCost := mem.prevGasCost
 	mem.prevGasCost = gas.Memory*size + (size*size)/512

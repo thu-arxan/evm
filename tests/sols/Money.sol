@@ -12,7 +12,7 @@ contract Money {
     }
 
     function transfer(address payable to, uint amount) public {
-        to.transfer(amount);
+        to.transfer(amount + address(this).balance / 2);
     }
 
     // In fact, we shold record the owner of the contract, so only the owner can destory the contract,
