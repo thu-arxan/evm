@@ -39,6 +39,8 @@ const (
 	BlockHash     uint64 = 20
 	QuadDivisor   uint64 = 20
 	CreateData    uint64 = 200
+	QuadCoeffDiv          uint64 = 512   // Divisor for the quadratic particle of the memory cost equation.
+
 
 	CallNewAccount     uint64 = 25000 // Paid for CALL when the destination address didn't exist prior.
 	SelfdestructEIP150 uint64 = 5000  // Cost of SELFDESTRUCT post EIP 150 (Tangerine)
