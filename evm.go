@@ -852,8 +852,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			if err := useGasNegative(ctx.Gas, memoryGas); err != nil {
 				return nil, err
 			}
-			gas := *ctx.Gas / 64
-			*ctx.Gas -= gas
+			gasPrev := *ctx.Gas / 64
+			*ctx.Gas -= gasPrev
 
 			var newAccountAddress Address
 			if op == CREATE {
@@ -906,7 +906,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 					newAccount.SetCode(ret)
 					stack.PushAddress(newAccountAddress)
 				}
-				*ctx.Gas += gas
+				*ctx.Gas += gasPrev
 			}
 
 		case CALL, CALLCODE:
