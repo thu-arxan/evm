@@ -2,6 +2,7 @@ package tests
 
 import (
 	"evm"
+	abi "evm/abi"
 	"evm/db"
 	"evm/example"
 	"evm/util"
@@ -47,13 +48,14 @@ func TestBalanceSol(t *testing.T) {
 	result = callBalance(t, memoryDB, bc, origin, mustParsePayload(balanceAbi, "info"), 1105) // except "6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"
 	require.EqualValues(t, []string{"6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0", "30"}, mustUnpack(balanceAbi, "info", result))
 	// define temporary address for testing
-	// todo:
-	// var temporarySender = RandomAddress()
-	// var temporaryBC = NewBlockchain()
-	// abi.SetAddressParser(temporarySender.Length(), func(bytes []byte) string {
-	// 	return BytesToAddress(bytes).String()
-	// })
-	// callBalance(t, memoryDB, temporaryBC, temporarySender, "info", nil, []string{temporarySender.String(), "30"}, 1105)
+	var temporarySender = RandomAddress()
+	var temporaryBC = NewBlockchain()
+	abi.SetAddressParser(temporarySender.Length(), func(bytes []byte) string {
+		return BytesToAddress(bytes).String()
+	})
+	result = callBalance(t, memoryDB, temporaryBC, temporarySender, mustParsePayload(balanceAbi, "info"), 1105)
+	require.EqualValues(t, []string{temporarySender.String(), "30"}, mustUnpack(balanceAbi, "info", result))
+	abi.ResetAddressParser()
 }
 
 // you can set gasCost to 0 if you do not want to compare gasCost
