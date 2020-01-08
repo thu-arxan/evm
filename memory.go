@@ -41,6 +41,7 @@ type Memory interface {
 	// unused. Solidity in particular makes this assumption when using MSIZE to
 	// get the current allocated memory.
 	Capacity() *big.Int
+	Len() uint64
 }
 
 // NewDynamicMemory is the constrcutor of DynamicMemory (note that although we take a maximumCapacity of uint64 we currently
@@ -93,6 +94,10 @@ func (mem *dynamicMemory) calMemGas(offset, length uint64) (uint64, error) {
 		return fee, nil
 	}
 	return 0, nil
+}
+
+func (mem *dynamicMemory) Len() uint64 {
+	return uint64(len(mem.slice))
 }
 
 // Read is the implementation of Memory
