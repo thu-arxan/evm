@@ -44,6 +44,7 @@ type DB interface {
 // WriteBatch define a batch which support some write operations
 type WriteBatch interface {
 	SetStorage(address Address, key core.Word256, value []byte)
+	// Note: db should delete all storages if an account suicide
 	UpdateAccount(account Account) error
 	AddLog(log *Log)
 }

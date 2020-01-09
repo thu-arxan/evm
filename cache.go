@@ -102,7 +102,6 @@ func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) 
 }
 
 // GetNonce return the nonce of account
-// todo: implement it in the right way
 func (cache *Cache) GetNonce(address Address) uint64 {
 	return cache.get(address).account.GetNonce()
 }
@@ -117,10 +116,10 @@ func (cache *Cache) Sync() {
 	wb := cache.db.NewWriteBatch()
 	for _, info := range cache.accounts {
 		if info.updated {
-			wb.UpdateAccount(info.account)
 			for key, value := range info.storage {
 				wb.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
 			}
+			wb.UpdateAccount(info.account)
 		}
 	}
 	for i := range cache.logs {
