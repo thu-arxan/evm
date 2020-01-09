@@ -2,6 +2,7 @@ package evm
 
 import (
 	"bytes"
+	"evm/util/math"
 	"math/big"
 
 	"evm/core"
@@ -277,7 +278,13 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				stack.Push(core.Zero256)
 				log.Debugf("%v %% %v = %v", x, y, 0)
 			} else {
-				mod := new(big.Int).Mod(x, y)
+				var mod *big.Int
+				if x.Sign() < 0 {
+					mod = new(big.Int).Mod(x.Abs(x), y.Abs(y))
+					mod.Neg(mod)
+				} else {
+					mod = new(big.Int).Mod(x.Abs(x), y.Abs(y))
+				}
 				res := stack.PushBigInt(mod)
 				log.Debugf("%v %% %v = %v (%v)", x, y, mod, res)
 			}
@@ -351,13 +358,27 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SLT: // 0x12
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			x, y := stack.PopSignedBigInt(), stack.PopSignedBigInt()
-			if x.Cmp(y) < 0 {
+			x, y := stack.PopBigInt(), stack.PopBigInt()
+
+			xSign := x.Cmp(math.BigPow(2, 255))
+			ySign := y.Cmp(math.BigPow(2, 255))
+
+			switch {
+			case xSign >= 0 && ySign < 0:
 				stack.Push(core.One256)
 				log.Debugf("%v < %v = %v\n", x, y, 1)
-			} else {
+			case xSign < 0 && ySign >= 0:
 				stack.Push(core.Zero256)
 				log.Debugf("%v < %v = %v\n", x, y, 0)
+
+			default:
+				if x.Cmp(y) < 0 {
+					stack.Push(core.One256)
+					log.Debugf("%v < %v = %v\n", x, y, 1)
+				} else {
+					stack.Push(core.Zero256)
+					log.Debugf("%v < %v = %v\n", x, y, 0)
+				}
 			}
 
 		case SGT: // 0x13
@@ -473,6 +494,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case SAR: //0x1D
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			shift, x := stack.PopBigInt(), stack.PopSignedBigInt()
+
 			if shift.Cmp(core.Big256) >= 0 {
 				reset := big.NewInt(0)
 				if x.Sign() < 0 {
