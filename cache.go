@@ -80,7 +80,10 @@ func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
 		return accInfo.storage[word256ToString(key)]
 	}
 	value := cache.db.GetStorage(address, key)
-	// todo: if we need to deal nil?
+	// avoid the db just return nil if storage is not exist
+	if len(value) == 0 {
+		value = make([]byte, 32)
+	}
 	accInfo.storage[word256ToString(key)] = value
 	return value
 }
