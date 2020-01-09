@@ -4,7 +4,7 @@ import (
 	"math/big"
 )
 
-var big1 = big.NewInt(1)
+var Big1 = big.NewInt(1)
 
 // Big256 is the big.Int of 256
 var Big256 = big.NewInt(256)
@@ -37,7 +37,7 @@ func FromTwosComplement(x *big.Int, n uint) *big.Int {
 	}
 	// Sign bit set => value (v) is negative
 	// x = 2^n - |v|
-	b := new(big.Int).Lsh(big1, n)
+	b := new(big.Int).Lsh(Big1, n)
 	// v = -|v| = x - 2^n
 	return new(big.Int).Sub(x, b)
 }
@@ -47,9 +47,9 @@ func FromTwosComplement(x *big.Int, n uint) *big.Int {
 func SignExtend(x *big.Int, n uint) *big.Int {
 	signBit := n - 1
 	// single bit set at sign bit position
-	mask := new(big.Int).Lsh(big1, signBit)
+	mask := new(big.Int).Lsh(Big1, signBit)
 	// all bits below sign bit set to 1 all above (including sign bit) set to 0
-	mask.Sub(mask, big1)
+	mask.Sub(mask, Big1)
 	if x.Bit(int(signBit)) == 1 {
 		// Number represented is negative - set all bits above sign bit (including sign bit)
 		return x.Or(x, mask.Not(mask))
@@ -60,5 +60,5 @@ func SignExtend(x *big.Int, n uint) *big.Int {
 
 func andMask(n uint) *big.Int {
 	x := new(big.Int)
-	return x.Sub(x.Lsh(big1, n), big1)
+	return x.Sub(x.Lsh(Big1, n), Big1)
 }

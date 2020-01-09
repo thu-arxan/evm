@@ -328,10 +328,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SIGNEXTEND: // 0x0B
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
-			back := stack.PopUint64()
-			if back < core.Word256Bytes-1 {
-				bits := uint(back*8 + 7)
-				stack.PushBigInt(core.SignExtend(stack.PopBigInt(), bits))
+			back := stack.PopBigInt()
+			if back.Cmp(big.NewInt(31)) < 0 {
+				bit := uint(back.Uint64() * 8 + 7)
+				res := stack.PopBigInt()
+				num := res
+				mask := back.Lsh(core.Big1, bit)
+				mask.Sub(mask, core.Big1)
+				if res.Bit(int(bit)) > 0 {
+					res.Or(res, mask.Not(mask))
+				} else {
+					res.And(res, mask)
+				}
+				stack.PushBigInt(res)
+				log.Debugf("%v signextend %v = %v\n", num, back, res)
 			}
 
 		case LT: // 0x10
