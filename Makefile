@@ -1,9 +1,11 @@
 # Go parameters
 GOCMD=go
 
+all: vet test
+
 # go vet:format check, bug check
 vet:
-	$(GOCMD) vet `go list ./...`
+	@$(GOCMD) vet `go list ./...`
 
 # test:
 test:
@@ -16,3 +18,6 @@ test:
 sol:
 	@-cd tests/sols && solcjs --bin *.sol
 	@-cd tests/sols && solcjs --abi *.sol
+
+generate:
+	@$(GOCMD) generate
