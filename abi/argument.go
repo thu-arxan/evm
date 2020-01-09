@@ -331,9 +331,16 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 		switch t {
 		case IntTy:
 			if input.Type.Size > 64 || input.Type.Size <= 0 {
-				a, _ = big.NewInt(0).SetString(v, 10)
+				var ok bool
+				a, ok = big.NewInt(0).SetString(v, 10)
+				if !ok {
+					return nil, fmt.Errorf("failed to change %s to big int", v)
+				}
 			} else {
-				a64, _ := strconv.ParseInt(v, 10, 0)
+				a64, err := strconv.ParseInt(v, 10, 0)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse %s as int because %v", v, err)
+				}
 				switch (input.Type.Size - 1) / 8 {
 				case 0:
 					a = int8(a64)
@@ -347,9 +354,16 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 			}
 		case UintTy:
 			if input.Type.Size > 64 || input.Type.Size <= 0 {
-				a, _ = big.NewInt(0).SetString(v, 10)
+				var ok bool
+				a, ok = big.NewInt(0).SetString(v, 10)
+				if !ok {
+					return nil, fmt.Errorf("failed to change %s to big int", v)
+				}
 			} else {
-				a64, _ := strconv.ParseUint(v, 10, 0)
+				a64, err := strconv.ParseUint(v, 10, 0)
+				if err != nil {
+					return nil, fmt.Errorf("failed to parse %s as uint because %v", v, err)
+				}
 				switch (input.Type.Size - 1) / 8 {
 				case 0:
 					a = uint8(a64)
@@ -378,6 +392,215 @@ func (arguments Arguments) PackValues(values ...string) ([]byte, error) {
 			}
 			if err != nil {
 				return nil, err
+			}
+		case BytesTy:
+			var err error
+			a, err = hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+		case FixedBytesTy:
+			bs, err := hex.DecodeString(v)
+			if err != nil {
+				return nil, err
+			}
+			if len(bs) != input.Type.Size {
+				return nil, fmt.Errorf("except fix length bytes which length is %d other than %d", input.Type.Size, len(bs))
+			}
+
+			switch input.Type.Size {
+			case 1:
+				var b [1]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 2:
+				var b [2]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 3:
+				var b [3]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 4:
+				var b [4]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 5:
+				var b [5]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 6:
+				var b [6]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 7:
+				var b [7]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 8:
+				var b [8]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 9:
+				var b [9]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 10:
+				var b [10]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 11:
+				var b [11]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 12:
+				var b [12]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 13:
+				var b [13]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 14:
+				var b [14]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 15:
+				var b [15]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 16:
+				var b [16]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 17:
+				var b [17]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 18:
+				var b [18]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 19:
+				var b [19]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 20:
+				var b [20]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 21:
+				var b [21]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 22:
+				var b [22]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 23:
+				var b [23]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 24:
+				var b [24]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 25:
+				var b [25]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 26:
+				var b [26]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 27:
+				var b [27]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 28:
+				var b [28]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 29:
+				var b [29]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 30:
+				var b [30]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 31:
+				var b [31]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
+			case 32:
+				var b [32]byte
+				for i := range bs {
+					b[i] = bs[i]
+				}
+				a = b
 			}
 		default:
 			// todo: we need to support other types
