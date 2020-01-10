@@ -671,10 +671,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				log.Debugf("=> attempted to get block hash of a block %d outof range", blockNumber)
 				maybe.PushError(errors.BlockNumberOutOfRange)
 			} else {
-				blockHash, err := evm.bc.GetBlockHash(blockNumber)
-				if err != nil {
-					maybe.PushError(err)
-				}
+				blockHash := evm.bc.GetBlockHash(blockNumber)
 				stack.Push(core.LeftPadWord256(blockHash))
 				log.Debugf("=> 0x%v\n", blockHash)
 			}

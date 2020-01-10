@@ -87,7 +87,7 @@ AddLog(log *Log)
 ### 2.4. Blockchain
 
 ```golang
-GetBlockHash(num uint64) ([]byte, error)
+GetBlockHash(num uint64) []byte
 // CreateAddress will be called by CREATE Opcode
 CreateAddress(caller Address, nonce uint64) Address
 // Create2Address will be called by CREATE2 Opcode
