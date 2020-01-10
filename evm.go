@@ -666,10 +666,10 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			// Note: Here is >= other than > because block is not generated while running tx
 			if blockNumber >= ctx.BlockHeight {
 				log.Debugf("=> attempted to get block hash of a non-existent block: %v", blockNumber)
-				maybe.PushError(errors.InvalidBlockNumber)
+				stack.Push(core.Zero256)
 			} else if ctx.BlockHeight-blockNumber > 256 {
 				log.Debugf("=> attempted to get block hash of a block %d outof range", blockNumber)
-				maybe.PushError(errors.BlockNumberOutOfRange)
+				stack.Push(core.Zero256)
 			} else {
 				blockHash := evm.bc.GetBlockHash(blockNumber)
 				stack.Push(core.LeftPadWord256(blockHash))
