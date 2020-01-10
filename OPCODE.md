@@ -79,6 +79,7 @@
 - MSIZE
 - GAS
 - RETURNDATASIZE
+- INVALID
 
 ## 2. 部分测试
 
@@ -87,14 +88,9 @@
 ## 3. 尚未测试
 
 - CALLDATACOPY
-- INVALID
-
 - EXTCODESIZE
 - EXTCODECOPY(这个的实现有问题)
 - RETURNDATACOPY
-
-
 - EXTCODEHASH(ethereum没有这个的测试)
-
 - CALLCODE
 - DELEGATECALL
