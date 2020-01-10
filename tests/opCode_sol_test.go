@@ -54,7 +54,6 @@ func callOp(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payl
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
-	t.Log(payload)
 	t.Log(output)
 	t.Log(gasQuota - gas)
 }
