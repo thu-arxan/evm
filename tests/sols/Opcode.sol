@@ -3,6 +3,7 @@ pragma solidity ^0.6.0;
 contract OpCode {
     function signExtend() public pure returns (uint r) {
         assembly { r := signextend(1, 10) }
+	return r;
     }
     function signExtend2() public pure returns (uint r) {
         assembly { r := signextend(1, 35) }
