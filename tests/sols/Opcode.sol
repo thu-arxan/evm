@@ -42,5 +42,46 @@ contract OpCode {
         }
     }
 
+    function mStore8() public pure returns (uint s) {
+        assembly {
+            mstore8(0, 128888)
+            s := mload(0)
+        }
+    }
 
+    function testPC() public pure returns (uint p) {
+        assembly {
+            p := pc()
+        }
+    }
+
+    function testMSize() public pure returns (uint s) {
+            assembly {
+                s := msize()
+            }
+    }
+
+    function testGas() public view returns (uint g) {
+        assembly {
+            g := gas()
+        }
+    }
+
+    function testRevert() public pure {
+        assembly {
+            revert(0, 0)
+        }
+    }
+
+    function testInvalid() public pure {
+        assembly {
+            invalid()
+        }
+    }
+
+    function testStop() public pure {
+        assembly {
+            stop()
+        }
+    }
 }
