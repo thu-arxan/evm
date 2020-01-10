@@ -878,9 +878,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case CREATE, CREATE2: // 0xF0, 0xFB
 			if err := useGasNegative(ctx.Gas, gas.Create); err != nil {
-				if err != errors.ExecutionReverted {
-					*ctx.Gas = 0
-				}
 				return nil, err
 			}
 			returnData = nil
@@ -894,9 +891,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 			// apply EIP150
 			if err := useGasNegative(ctx.Gas, memoryGas); err != nil {
-				if err != errors.ExecutionReverted {
-					*ctx.Gas = 0
-				}
 				return nil, err
 			}
 			gasPrev := *ctx.Gas / 64
@@ -1057,9 +1051,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			output, memoryGas := memory.Read(offset, size)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
 			log.Debugf("=> [%v, %v] (%d) 0x%X\n", offset, size, len(output), output)
-			if maybe.Error() != errors.ExecutionReverted {
-				*ctx.Gas = 0
-			}
 			return output, maybe.Error()
 
 		case REVERT: // 0xFD
@@ -1093,25 +1084,16 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(evm.cache.UpdateAccount(account))
 			maybe.PushError(evm.cache.Suicide(callee))
 			log.Debugf("=> (%v) %v\n", receiver, balance)
-			if maybe.Error() != errors.ExecutionReverted {
-				*ctx.Gas = 0
-			}
 			return nil, maybe.Error()
 
 		case STOP: // 0x00
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Zero))
 			log.Debugf("\n")
-			if maybe.Error() != errors.ExecutionReverted {
-				*ctx.Gas = 0
-			}
 			return nil, maybe.Error()
 
 		default:
 			maybe.PushError(errors.UnknownOpcode)
 			log.Debugf("(pc) %-3v Unknown opcode %v\n", pc, op)
-			if maybe.Error() != errors.ExecutionReverted {
-				*ctx.Gas = 0
-			}
 			return nil, maybe.Error()
 		}
 		pc++
