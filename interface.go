@@ -50,6 +50,7 @@ type WriteBatch interface {
 
 // Blockchain describe what function that blockchain system shoudld provide to support the evm
 type Blockchain interface {
+	// GetBlockHash return ZeroWord256 if num > 256 or num > max block height
 	GetBlockHash(num uint64) []byte
 	// CreateAddress will be called by CREATE Opcode
 	CreateAddress(caller Address, nonce uint64) Address
