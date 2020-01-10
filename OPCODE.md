@@ -72,14 +72,13 @@
 - STOP
 - REVERT
 - INVALID
+- SIGNEXTEND
 
 ## 2. 部分测试
 
 - SSTORE(增加了对EIP-2200的支持，需要覆盖足够的分支进一步测试)
 
 ## 3. 尚未测试
-
-- SIGNEXTEND
 - CALLDATACOPY
 - EXTCODESIZE
 - EXTCODECOPY(这个的实现有问题)
