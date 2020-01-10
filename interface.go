@@ -10,7 +10,8 @@ type Account interface {
 	SubBalance(balance uint64) error
 	GetCode() []byte
 	SetCode(code []byte)
-	// GetCodeHash return the hash of account code, please return [32]byte, and return [32]byte{0, ..., 0} if code is empty
+	// GetCodeHash return the hash of account code, please return [32]byte,
+	// and return [32]byte{0, ..., 0} if code is empty
 	GetCodeHash() []byte
 	GetNonce() uint64
 	SetNonce(nonce uint64)
@@ -54,7 +55,8 @@ type Blockchain interface {
 	CreateAddress(caller Address, nonce uint64) Address
 	// Create2Address will be called by CREATE2 Opcode
 	Create2Address(caller Address, salt, code []byte) Address
-	// Note: NewAccount will create a default account in Blockchain service, but please do not append the account into db here
+	// Note: NewAccount will create a default account in Blockchain service,
+	// but please do not append the account into db here
 	NewAccount(address Address) Account
 	// BytesToAddress provide a way convert bytes(normally [32]byte) to Address
 	BytesToAddress(bytes []byte) Address
