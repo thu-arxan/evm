@@ -61,11 +61,12 @@ func callOp(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payl
 func callOpIgnoreError(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, payload []byte, gasCost uint64) {
 	var gasQuota uint64 = 10000
 	var gas = gasQuota
-	output, _ := evm.New(bc, db, &evm.Context{
+	output, err := evm.New(bc, db, &evm.Context{
 		Input: payload,
 		Value: 0,
 		Gas:   &gas,
 	}).Call(caller, opCodeAddress, opCode)
+	t.Log(err)
 	if gasCost != 0 {
 		require.EqualValues(t, gasCost, gasQuota-gas)
 	}
