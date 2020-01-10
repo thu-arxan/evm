@@ -330,7 +330,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
 			back := stack.PopBigInt()
 			if back.Cmp(big.NewInt(31)) < 0 {
-				bit := uint(back.Uint64() * 8 + 7)
+				bit := uint(back.Uint64()*8 + 7)
 				res := stack.PopBigInt()
 				num := res
 				mask := back.Lsh(core.Big1, bit)
@@ -764,7 +764,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			if isEqual(data.Bytes(), currentData) {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.SstoreNoopEIP2200))
 			} else {
-				originData := evm.cache.db.GetStorage(callee, loc)
+				originData := evm.cache.db.GetStorage(callee, loc.Bytes())
 				if isEqual(originData, currentData) {
 					if isEmptyValue(originData) {
 						maybe.PushError(useGasNegative(ctx.Gas, gas.SstoreInitEIP2200))

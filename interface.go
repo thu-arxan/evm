@@ -1,7 +1,5 @@
 package evm
 
-import "evm/core"
-
 // This file defines some kinds of interfaces
 
 // Account describe what function that account should provide
@@ -37,13 +35,13 @@ type DB interface {
 	// GetStorage return a default account if unexist
 	GetAccount(address Address) Account
 	// Note: GetStorage return nil if key is not exist
-	GetStorage(address Address, key core.Word256) (value []byte)
+	GetStorage(address Address, key []byte) (value []byte)
 	NewWriteBatch() WriteBatch
 }
 
 // WriteBatch define a batch which support some write operations
 type WriteBatch interface {
-	SetStorage(address Address, key core.Word256, value []byte)
+	SetStorage(address Address, key []byte, value []byte)
 	// Note: db should delete all storages if an account suicide
 	UpdateAccount(account Account) error
 	AddLog(log *Log)
@@ -61,15 +59,3 @@ type Blockchain interface {
 	// BytesToAddress provide a way convert bytes(normally [32]byte) to Address
 	BytesToAddress(bytes []byte) Address
 }
-
-// emptyAccount contain nothing
-type emptyAccount struct{}
-
-func (account emptyAccount) SetCode(code []byte)             {}
-func (account emptyAccount) GetAddress() Address             { return nil }
-func (account emptyAccount) GetBalance() uint64              { return 0 }
-func (account emptyAccount) GetEVMCode() []byte              { return nil }
-func (account emptyAccount) GetCode() []byte                 { return nil }
-func (account emptyAccount) GetCodeHash() []byte             { return nil }
-func (account emptyAccount) SubBalance(balance uint64) error { return nil }
-func (account emptyAccount) AddBalance(balance uint64) error { return nil }

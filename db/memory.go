@@ -3,7 +3,6 @@ package db
 import (
 	"errors"
 	"evm"
-	"evm/core"
 	"evm/util"
 	"fmt"
 )
@@ -66,8 +65,8 @@ func (m *Memory) GetAccount(address evm.Address) evm.Account {
 }
 
 // GetStorage is the implementation of interface
-func (m *Memory) GetStorage(address evm.Address, key core.Word256) []byte {
-	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
+func (m *Memory) GetStorage(address evm.Address, key []byte) []byte {
+	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key)
 	if util.Contain(m.storages, storageKey) {
 		return m.storages[storageKey]
 	}
@@ -80,8 +79,8 @@ func (m *Memory) NewWriteBatch() evm.WriteBatch {
 }
 
 // SetStorage is the implementation of interface
-func (m *Memory) SetStorage(address evm.Address, key core.Word256, value []byte) {
-	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key.Bytes())
+func (m *Memory) SetStorage(address evm.Address, key, value []byte) {
+	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key)
 	m.storages[storageKey] = value
 }
 

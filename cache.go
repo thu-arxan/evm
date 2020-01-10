@@ -79,7 +79,7 @@ func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
 	if util.Contain(accInfo.storage, word256ToString(key)) {
 		return accInfo.storage[word256ToString(key)]
 	}
-	value := cache.db.GetStorage(address, key)
+	value := cache.db.GetStorage(address, key.Bytes())
 	// avoid the db just return nil if storage is not exist
 	if len(value) == 0 {
 		value = make([]byte, 32)
@@ -117,7 +117,7 @@ func (cache *Cache) Sync() {
 	for _, info := range cache.accounts {
 		if info.updated {
 			for key, value := range info.storage {
-				wb.SetStorage(info.account.GetAddress(), stringToWord256(key), value)
+				wb.SetStorage(info.account.GetAddress(), stringToWord256(key).Bytes(), value)
 			}
 			wb.UpdateAccount(info.account)
 		}
