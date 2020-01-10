@@ -12,9 +12,9 @@ func NewBlockchain() *Blockchain {
 }
 
 // GetBlockHash is the implementation of interface
-func (bc *Blockchain) GetBlockHash(num uint64) ([]byte, error) {
+func (bc *Blockchain) GetBlockHash(num uint64) []byte {
 	var hash = make([]byte, 32)
-	return hash, nil
+	return hash
 }
 
 // CreateAddress is the implementation of interface
