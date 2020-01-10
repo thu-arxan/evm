@@ -38,7 +38,7 @@ func TestOpCOde(t *testing.T) {
 	callOp(t, memoryDB, bc, origin, mustPack(opCodeAbi, "testGas"), 281)
 	callOp(t, memoryDB, bc, origin, mustPack(opCodeAbi, "testStop"), 223)
 	callOpIgnoreError(t, memoryDB, bc, origin, mustPack(opCodeAbi, "testRevert"), 186)
-	callOpIgnoreError(t, memoryDB, bc, origin, mustPack(opCodeAbi, "testInvalid"), 1)
+	callOpIgnoreError(t, memoryDB, bc, origin, mustPack(opCodeAbi, "testInvalid"), 100000)
 
 }
 
