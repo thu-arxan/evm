@@ -7,10 +7,6 @@ contract OpCode {
     function signExtend2() public pure returns (uint r) {
         assembly { r := signextend(1, 35) }
     }
-    function signExtendMinux() public pure returns (uint r) {
-        assembly { r := signextend(-1, 10) }
-    }
-
     function callDataCopy(string memory str_input) public pure returns (string memory r) {
         assembly {
             calldatacopy(0, 0, 32)
