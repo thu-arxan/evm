@@ -1064,9 +1064,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case INVALID: // 0xFE
 			maybe.PushError(errors.ExecutionAborted)
-			if maybe.Error() != errors.ExecutionReverted {
-				*ctx.Gas = 0
-			}
+			*ctx.Gas = 0
 			return nil, maybe.Error()
 
 		case SELFDESTRUCT: // 0xFF
