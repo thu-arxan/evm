@@ -7,7 +7,7 @@ contract OpCode {
     function signExtend2() public pure returns (uint r) {
         assembly { r := signextend(1, 35) }
     }
-    function callDataCopy(string memory str_input) public pure returns (string memory r) {
+    function callDataCopy() public pure returns (string memory r) {
         assembly {
             calldatacopy(0, 0, 32)
             r := mload(0)
