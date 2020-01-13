@@ -41,7 +41,6 @@ func SetLogLevel(level string) {
 	default:
 		logrus.SetLevel(logrus.InfoLevel)
 	}
-
 }
 
 // EVM is the evm
