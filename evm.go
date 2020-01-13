@@ -575,14 +575,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case CALLDATACOPY: // 0x37
 			memOff := stack.PopBigInt()
-			inputOff := stack.PopUint64()
-			length := stack.PopUint64()
-			data, err := util.SubSlice(ctx.Input, inputOff, length)
-			if err != nil {
-				maybe.PushError(errors.InputOutOfBounds)
-			}
-			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow+gas.Copy*((length+31)/32)))
-			gasCost := memory.Write(memOff, data)
+			inputOff := stack.PopBigInt()
+			length := stack.PopBigInt()
+			data := util.GetDataBig(ctx.Input, inputOff, length)
+			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
+			gasCost := memory.Write(memOff, data) + wordGas(length.Uint64(), gas.Copy)
 			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, inputOff, length, data)
 
@@ -594,14 +591,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case CODECOPY: // 0x39
 			memOff := stack.PopBigInt()
-			codeOff := stack.PopUint64()
-			length := stack.PopUint64()
-			data, err := util.SubSlice(code, codeOff, length)
-			if err != nil {
-				maybe.PushError(errors.InputOutOfBounds)
-			}
-			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow+gas.Copy*((length+31)/32)))
-			gasCost := memory.Write(memOff, data)
+			codeOff := stack.PopBigInt()
+			length := stack.PopBigInt()
+			data := util.GetDataBig(code, codeOff, length)
+			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
+			gasCost := memory.Write(memOff, data) + wordGas(length.Uint64(), gas.Copy)
 			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
@@ -639,12 +633,12 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			memOff, outputOff, length := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
 			end := new(big.Int).Add(outputOff, length)
 
-			if end.BitLen() > 64 || uint64(len(returnData)) < end.Uint64() {
+			if !end.IsUint64() || uint64(len(returnData)) < end.Uint64() {
 				maybe.PushError(errors.ReturnDataOutOfBounds)
 				continue
 			}
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow+gas.Copy*((length.Uint64()+31)/32)))
-			gasCost := memory.Write(memOff, returnData)
+			gasCost := memory.Write(memOff, returnData[outputOff.Uint64():end.Uint64()]) + wordGas(length.Uint64(), gas.Copy)
 			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, outputOff, length, returnData)
 
