@@ -1025,7 +1025,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			// store prev ctx
 			prevInput := evm.ctx.Input
 			prevValue := evm.ctx.Value
-			prevGas := *evm.ctx.Gas
+			prevGas := evm.ctx.Gas
 			// update ctx
 			ctx.Input = input
 			ctx.Value = 0
@@ -1048,8 +1048,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			// restore ctx
 			ctx.Input = prevInput
 			ctx.Value = prevValue
-			prevGas += *ctx.Gas
-			ctx.Gas = &prevGas
+			*prevGas += *ctx.Gas
+			ctx.Gas = prevGas
 
 		case RETURN: // 0xF3
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Zero))
