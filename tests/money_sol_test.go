@@ -48,6 +48,7 @@ func TestMoneySol(t *testing.T) {
 	require.EqualValues(t, 20, memoryDB.GetAccount(someone).GetBalance())
 	// then we call transfer to
 	// destory
-	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "destory"), 5143, 0)
+	result = callWithPayload(t, memoryDB, bc, user, moneyAddress, mustPack(moneyAbi, "destory"), 5143, 24000)
+	require.Len(t, result, 0)
 	require.EqualValues(t, 80, memoryDB.GetAccount(user).GetBalance(), fmt.Sprintf("except 80 other than %d", memoryDB.GetAccount(user).GetBalance()))
 }
