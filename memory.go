@@ -42,6 +42,7 @@ type Memory interface {
 	// get the current allocated memory.
 	Capacity() *big.Int
 	Len() uint64
+	CalMemGas(offset, length uint64) (uint64, error)
 }
 
 // NewDynamicMemory is the constrcutor of DynamicMemory (note that although we take a maximumCapacity of uint64 we currently
@@ -69,7 +70,7 @@ type dynamicMemory struct {
 	prevGasCost     uint64
 }
 
-func (mem *dynamicMemory) calMemGas(offset, length uint64) (uint64, error) {
+func (mem *dynamicMemory) CalMemGas(offset, length uint64) (uint64, error) {
 	if length == 0 {
 		return 0, nil
 	}
@@ -117,7 +118,7 @@ func (mem *dynamicMemory) Read(offset, length *big.Int) ([]byte, uint64) {
 		return nil, 0
 	}
 	// Calculate gasCost before resize
-	gasCost, err := mem.calMemGas(offset.Uint64(), length.Uint64())
+	gasCost, err := mem.CalMemGas(offset.Uint64(), length.Uint64())
 	if err != nil {
 		mem.pushErr(err)
 		return nil, 0
@@ -139,7 +140,7 @@ func (mem *dynamicMemory) Write(offset *big.Int, value []byte) uint64 {
 		return 0
 	}
 	// Calculate gasCost before resize
-	gasCost, err := mem.calMemGas(offset.Uint64(), uint64(len(value)))
+	gasCost, err := mem.CalMemGas(offset.Uint64(), uint64(len(value)))
 	if err != nil {
 		mem.pushErr(err)
 		return 0
