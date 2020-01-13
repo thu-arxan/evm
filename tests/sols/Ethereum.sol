@@ -28,7 +28,7 @@ contract OpCodes {
      //keywords
      assembly {
          pop(address())
-         return(2, byte(2,1))
+         //return(2, byte(2,1))
      }
 
      //label_complex
