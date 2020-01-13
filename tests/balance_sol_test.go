@@ -86,7 +86,7 @@ func TestBalanceSolBenchmark(t *testing.T) {
 	var caller = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
 
 	var begin = time.Now()
-	var size = 1
+	var size = 10000
 	evm.SetLogLevel("info")
 	for i := 0; i < size; i++ {
 		var gas uint64 = 1000000

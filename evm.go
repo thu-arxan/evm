@@ -5,7 +5,6 @@ import (
 	"evm/util/math"
 	"math/big"
 	"strings"
-	"time"
 
 	"evm/core"
 	"evm/errors"
@@ -15,7 +14,11 @@ import (
 
 	"evm/crypto"
 
-	"github.com/labstack/gommon/log"
+	"github.com/sirupsen/logrus"
+)
+
+var (
+	log = logrus.WithFields(logrus.Fields{"package": "evm"})
 )
 
 // Here defines some default stack capacity variables
@@ -25,22 +28,18 @@ const (
 	MaxCodeSize             int    = 24576
 )
 
-func init() {
-	log.SetLevel(log.DEBUG)
-}
-
 // SetLogLevel set log level
 func SetLogLevel(level string) {
 	level = strings.ToLower(level)
 	switch level {
 	case "debug":
-		log.SetLevel(log.DEBUG)
+		logrus.SetLevel(logrus.DebugLevel)
 	case "warn":
-		log.SetLevel(log.WARN)
+		logrus.SetLevel(logrus.WarnLevel)
 	case "error":
-		log.SetLevel(log.ERROR)
+		logrus.SetLevel(logrus.ErrorLevel)
 	default:
-		log.SetLevel(log.INFO)
+		logrus.SetLevel(logrus.InfoLevel)
 	}
 
 }
@@ -54,10 +53,6 @@ type EVM struct {
 	memoryProvider func(errorSink errors.Sink) Memory
 	stackDepth     uint64
 	refund         uint64
-
-	// now means to debug why performance is so low
-	begin time.Time
-	now   time.Time
 }
 
 // New is the constructor of EVM
@@ -67,8 +62,6 @@ func New(bc Blockchain, db DB, ctx *Context) *EVM {
 		cache:          NewCache(db),
 		memoryProvider: DefaultDynamicMemoryProvider,
 		ctx:            ctx,
-		begin:          time.Now(),
-		now:            time.Now(),
 	}
 }
 
@@ -233,9 +226,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		var op = getOpCode(code, pc)
 		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
-
-		log.Infof("run op(%s, pc=%d) cost %v, total cost %v", op.String(), pc, time.Since(evm.now), time.Since(evm.begin))
-		evm.now = time.Now()
 
 		switch op {
 		case ADD: // 0x01
