@@ -82,19 +82,16 @@
 - INVALID
 - CALLDATACOPY
 - EXTCODECOPY
+- EXTCODESIZE
+- RETURNDATACOPY
+- CALLCODE
+- DELEGATECALL
 
 ## 2. 部分测试
 
 - SSTORE(增加了对EIP-2200的支持，需要覆盖足够的分支进一步测试)
 
 ## 3. 尚未测试
-
-
-- EXTCODESIZE
-- RETURNDATACOPY
-- CALLCODE
-- DELEGATECALL
-
 
 - EXTCODEHASH(ethereum没有这个的测试，已复制ethereum实现)
 

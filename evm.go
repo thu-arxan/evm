@@ -1076,17 +1076,18 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 		case SELFDESTRUCT: // 0xFF
 			maybe.PushError(useGasNegative(ctx.Gas, gas.SelfdestructEIP150))
 			receiver := stack.PopAddress()
+			//todo: different db implementation
 			account := evm.getAccount(receiver)
 			balance := evm.getAccount(callee).GetBalance()
 			if isEmptyAccount(account) && balance != 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.CreateBySelfdestruct))
 			}
-			if evm.cache.HasSuicide(callee) {
-				evm.addRefund(gas.SelfdestructRefund)
-			}
 			maybe.PushError(account.AddBalance(balance))
 			maybe.PushError(evm.cache.UpdateAccount(account))
 			maybe.PushError(evm.cache.Suicide(callee))
+			if !evm.cache.HasSuicide(callee) {
+				evm.addRefund(gas.SelfdestructRefund)
+			}
 			log.Debugf("=> (%v) %v\n", receiver, balance)
 			return nil, maybe.Error()
 
