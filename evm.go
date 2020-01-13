@@ -887,9 +887,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			offset, size := stack.PopBigInt(), stack.PopBigInt()
 			input, memoryGas := memory.Read(offset, size)
 			if op == CREATE2 {
-				//TODO: consider overflow
-				wordGas := (size.Uint64() + 31) / 32 * gas.SHA3Word
-				memoryGas += wordGas
+				memoryGas += wordGas(size.Uint64(), gas.SHA3Word)
 			}
 			// apply EIP150
 			if err := useGasNegative(ctx.Gas, memoryGas); err != nil {
