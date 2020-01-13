@@ -46,6 +46,11 @@
 			"revisionTime": "2019-01-09T08:30:14Z"
 		},
 		{
+			"checksumSHA1": "mB5o9lbse489BCvZGbRkarc2Xp0=",
+			"path": "github.com/sirupsen/logrus",
+			"revision": ""
+		},
+		{
 			"checksumSHA1": "qTNfPVU4Tz/JDMcSeL+k9HX2cV8=",
 			"path": "github.com/stretchr/testify/assert",
 			"revision": "363ebb24d041ccea8068222281c2e963e997b9dc",
