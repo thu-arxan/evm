@@ -1082,12 +1082,13 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			if isEmptyAccount(account) && balance != 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.CreateBySelfdestruct))
 			}
-			maybe.PushError(account.AddBalance(balance))
-			maybe.PushError(evm.cache.UpdateAccount(account))
-			maybe.PushError(evm.cache.Suicide(callee))
 			if !evm.cache.HasSuicide(callee) {
 				evm.addRefund(gas.SelfdestructRefund)
 			}
+			maybe.PushError(account.AddBalance(balance))
+			maybe.PushError(evm.cache.UpdateAccount(account))
+			maybe.PushError(evm.cache.Suicide(callee))
+
 			log.Debugf("=> (%v) %v\n", receiver, balance)
 			return nil, maybe.Error()
 
