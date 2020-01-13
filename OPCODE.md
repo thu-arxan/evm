@@ -4,11 +4,11 @@
 
 ## 1. 相对完备
 
-- PUSH*(PUSH1, PUSH2, PUSH4)
+- PUSH*
 - POP
-- SWAP*(SWAP1, SWAP2, SWAP3)
+- SWAP*
 - CALLVALUE
-- DUP*(DUP1, DUP2, DUP3, DUP4)
+- DUP*
 - ISZERO
 - JUMP
 - JUMPI
@@ -61,7 +61,6 @@
 - CREATE(需要看一下nonce)
 - BALANCE
 - CREATE2
-
 - CODESIZE
 - RETURNDATASIZE
 - BLOCKHASH
@@ -94,4 +93,3 @@
 ## 3. 尚未测试
 
 - EXTCODEHASH(ethereum没有这个的测试，已复制ethereum实现)
-
