@@ -29,6 +29,7 @@ func TestEvm(t *testing.T) {
 		Input: input,
 		Value: 0,
 		Gas: &gas,
+		BlockHeight: 1,
 	}).Call(origin, evmCodeAddress, evmCode)
 	require.NoError(t, err)
 	t.Log(output)
