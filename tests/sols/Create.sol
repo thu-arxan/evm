@@ -30,9 +30,6 @@ contract C {
 
     function createAndGetBalance(uint arg, uint amount) public returns (uint) {
         address newD = createAndEndowD(arg, amount);
-        assembly {
-            extcodesize
-        }
         return newD.balance;
     }
 }
