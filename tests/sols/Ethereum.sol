@@ -227,7 +227,7 @@ contract OpCodes {
 
      //returndatacopy
      assembly { returndatacopy(64, 32, 0) }
-     
+
      //callcode
      assembly {
          let x := mload(0x40)   //Find empty storage location using "free memory pointer"
