@@ -619,17 +619,15 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> %d\n", length)
 
 		case EXTCODECOPY: // 0x3C
+			maybe.PushError(useGasNegative(ctx.Gas, gas.ExtCode))
 			address := stack.PopAddress()
 			code := evm.getAccount(address).GetCode()
 			memOff := stack.PopBigInt()
-			codeOff := stack.PopUint64()
-			length := stack.PopUint64()
-			data, err := util.SubSlice(code, codeOff, length)
-			if err != nil {
-				maybe.PushError(errors.InputOutOfBounds)
-			}
-			gasCost := memory.Write(memOff, data)
-			maybe.PushError(useGasNegative(ctx.Gas, gas.ExtCode+gasCost))
+			codeOff := stack.PopBigInt()
+			length := stack.PopBigInt()
+			data := util.GetDataBig(code, codeOff, length)
+			gasCost := memory.Write(memOff, data) + wordGas(length.Uint64(), gas.Copy)
+			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
 			log.Debugf("=> [%v, %v, %v] %X\n", memOff, codeOff, length, data)
 
 		case RETURNDATASIZE: // 0x3D
@@ -656,10 +654,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			acc := evm.getAccount(address)
 			// keccak256 hash of a contract's code
 			var extcodehash core.Word256
-			if len(acc.GetCodeHash()) > 0 {
-				copy(extcodehash[:], acc.GetCodeHash())
+			if isEmptyAccount(acc) {
+				extcodehash = core.Zero256
 			} else {
-				copy(extcodehash[:], crypto.Keccak256(acc.GetCode()))
+				if len(acc.GetCodeHash()) > 0 {
+					copy(extcodehash[:], acc.GetCodeHash())
+				} else {
+					copy(extcodehash[:], crypto.Keccak256(acc.GetCode()))
+				}
 			}
 			stack.Push(extcodehash)
 
@@ -1178,4 +1180,8 @@ func isEmptyAccount(account Account) bool {
 		return true
 	}
 	return false
+}
+
+func wordGas(length, copyGas uint64) uint64 {
+	return (length + 31) / 32 * copyGas
 }

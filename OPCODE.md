@@ -92,6 +92,9 @@
 - EXTCODESIZE
 - EXTCODECOPY(这个的实现有问题)
 - RETURNDATACOPY
-- EXTCODEHASH(ethereum没有这个的测试)
 - CALLCODE
 - DELEGATECALL
+
+
+- EXTCODEHASH(ethereum没有这个的测试，已复制ethereum实现)
+
