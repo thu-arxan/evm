@@ -926,6 +926,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			ctx.Input = prevInput
 			ctx.Value = prevValue
 			if callErr != nil {
+				log.Debug(callErr)
 				stack.Push(core.Zero256)
 				// Note we both set the return buffer and return the result normally in order to service the error to
 				// EVM caller
