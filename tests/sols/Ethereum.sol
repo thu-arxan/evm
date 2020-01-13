@@ -97,12 +97,14 @@ contract OpCodes {
      //returndatasize
      assembly { let r := returndatasize() }
 
-     //returndatacopy
-     assembly { returndatacopy(64, 32, 0) }
+
      //byzantium vs const Constantinople
      //staticcall
      assembly { pop(staticcall(10000, 0x123, 64, 0x10, 128, 0x10)) }
 
+     //returndatacopy
+     assembly { returndatacopy(64, 32, 0) }
+     
      /*//create2 Constantinople
      assembly { pop(create2(10, 0x123, 32, 64)) }*/
 
