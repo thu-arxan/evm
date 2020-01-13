@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"evm/util/math"
 	"math/big"
+	"strings"
+	"time"
 
 	"evm/core"
 	"evm/errors"
@@ -27,6 +29,22 @@ func init() {
 	log.SetLevel(log.DEBUG)
 }
 
+// SetLogLevel set log level
+func SetLogLevel(level string) {
+	level = strings.ToLower(level)
+	switch level {
+	case "debug":
+		log.SetLevel(log.DEBUG)
+	case "warn":
+		log.SetLevel(log.WARN)
+	case "error":
+		log.SetLevel(log.ERROR)
+	default:
+		log.SetLevel(log.INFO)
+	}
+
+}
+
 // EVM is the evm
 type EVM struct {
 	origin         Address
@@ -36,6 +54,10 @@ type EVM struct {
 	memoryProvider func(errorSink errors.Sink) Memory
 	stackDepth     uint64
 	refund         uint64
+
+	// now means to debug why performance is so low
+	begin time.Time
+	now   time.Time
 }
 
 // New is the constructor of EVM
@@ -45,6 +67,8 @@ func New(bc Blockchain, db DB, ctx *Context) *EVM {
 		cache:          NewCache(db),
 		memoryProvider: DefaultDynamicMemoryProvider,
 		ctx:            ctx,
+		begin:          time.Now(),
+		now:            time.Now(),
 	}
 }
 
@@ -209,6 +233,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		var op = getOpCode(code, pc)
 		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
+
+		log.Infof("run op(%s, pc=%d) cost %v, total cost %v", op.String(), pc, time.Since(evm.now), time.Since(evm.begin))
+		evm.now = time.Now()
 
 		switch op {
 		case ADD: // 0x01
@@ -1021,7 +1048,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				input, memoryGas = memory.Read(inOffset, inSize)
 			}
 			gas = staticCallGas(*ctx.Gas, memoryGas, gas)
-			maybe.PushError(useGasNegative(ctx.Gas, gas + memoryGas))
+			maybe.PushError(useGasNegative(ctx.Gas, gas+memoryGas))
 			// store prev ctx
 			prevInput := evm.ctx.Input
 			prevValue := evm.ctx.Value

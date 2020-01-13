@@ -48,7 +48,6 @@ func (st *Stack) Push(word core.Word256) {
 
 // Pop pos a core.Word256 from the stak
 func (st *Stack) Pop() core.Word256 {
-	// st.useGas(GasStackOp)
 	if st.ptr == 0 {
 		st.pushErr(errors.DataStackUnderflow)
 		return core.Zero256
