@@ -4,6 +4,12 @@ contract D {
     uint public x;
     constructor(uint a) public payable {
         x = a;
+        assembly {
+            calldatacopy(0, 0, 32)
+        }
+    }
+    function getter() public view returns (uint) {
+        return x;
     }
 }
 
@@ -24,6 +30,9 @@ contract C {
 
     function createAndGetBalance(uint arg, uint amount) public returns (uint) {
         address newD = createAndEndowD(arg, amount);
+        assembly {
+            extcodesize
+        }
         return newD.balance;
     }
 }

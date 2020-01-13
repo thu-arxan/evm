@@ -8,6 +8,7 @@ contract OpCode {
     function signExtend2() public pure returns (uint r) {
         assembly { r := signextend(35, 1) }
     }
+    // not test yet
     function callDataCopy() public pure returns (string memory r) {
         assembly {
             calldatacopy(0, 0, 32)
@@ -27,6 +28,7 @@ contract OpCode {
         }
     }
 
+    // not test yet
     function returnDataCopy() public pure {
         assembly {
             returndatacopy(64, 32, 0)
