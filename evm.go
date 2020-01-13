@@ -1077,6 +1077,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.SelfdestructEIP150))
 			receiver := stack.PopAddress()
 			//todo: different db implementation
+			if !evm.cache.Exist(receiver) {
+				maybe.PushError(useGasNegative(ctx.Gas, gas.CreateBySelfdestruct))
+			}
 			account := evm.getAccount(receiver)
 			balance := evm.getAccount(callee).GetBalance()
 			if isEmptyAccount(account) && balance != 0 {
