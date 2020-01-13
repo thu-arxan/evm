@@ -32,17 +32,17 @@ contract OpCodes {
      }
 
      //label_complex
-     /*assembly { 7 abc: 8 eq jump(abc) jumpi(eq(7, 8), abc) pop }
-     //assembly { pop(jumpi(eq(7, 8), abc)) jump(abc) }*/
+     //assembly { 7 abc: 8 eq jump(abc) jumpi(eq(7, 8), abc) pop }
+     //assembly { pop(jumpi(eq(7, 8), abc)) jump(abc) }
 
      //functional
      /*assembly { let x := 2 add(7, mul(6, x)) mul(7, 8) add =: x }*/
 
      //for_statement
-     assembly { for { let i := 1 } lt(i, 5) { i := add(i, 1) } {} }
-     assembly { for { let i := 6 } gt(i, 5) { i := add(i, 1) } {} }
-     assembly { for { let i := 1 } slt(i, 5) { i := add(i, 1) } {} }
-     assembly { for { let i := 6 } sgt(i, 5) { i := add(i, 1) } {} }
+     //assembly { for { let i := 1 } lt(i, 5) { i := add(i, 1) } {} }
+     //assembly { for { let i := 6 } gt(i, 5) { i := add(i, 1) } {} }
+     //assembly { for { let i := 1 } slt(i, 5) { i := add(i, 1) } {} }
+     //assembly { for { let i := 6 } sgt(i, 5) { i := add(i, 1) } {} }
 
      //no_opcodes_in_strict
      assembly { pop(callvalue()) }
