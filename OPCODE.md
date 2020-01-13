@@ -79,6 +79,7 @@
 - MSIZE
 - GAS
 - RETURNDATASIZE
+- CALLDATACOPY
 
 ## 2. 部分测试
 
@@ -86,7 +87,6 @@
 
 ## 3. 尚未测试
 
-- CALLDATACOPY
 - INVALID
 
 - EXTCODESIZE
