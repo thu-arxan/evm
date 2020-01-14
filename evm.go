@@ -52,6 +52,7 @@ type EVM struct {
 	memoryProvider func(errorSink errors.Sink) Memory
 	stackDepth     uint64
 	refund         uint64
+	sync           bool
 }
 
 // New is the constructor of EVM
@@ -61,6 +62,7 @@ func New(bc Blockchain, db DB, ctx *Context) *EVM {
 		cache:          NewCache(db),
 		memoryProvider: DefaultDynamicMemoryProvider,
 		ctx:            ctx,
+		sync:           true,
 	}
 }
 
@@ -111,7 +113,9 @@ func (evm *EVM) Create(caller Address) ([]byte, Address, error) {
 		return nil, nil, err
 	}
 
-	evm.cache.Sync()
+	if evm.sync {
+		evm.cache.Sync()
+	}
 	return code, address, nil
 }
 
@@ -149,7 +153,9 @@ func (evm *EVM) CallWithoutTransfer(caller, callee Address, code []byte) (output
 	}
 
 	// sync change to db if no error
-	evm.cache.Sync()
+	if evm.sync {
+		evm.cache.Sync()
+	}
 	return
 }
 
