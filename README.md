@@ -106,4 +106,4 @@ BytesToAddress(bytes []byte) Address
 
 ## 3. 如何调用
 
-参考example中的样例，文档待更新。
+参考example中的README.md
