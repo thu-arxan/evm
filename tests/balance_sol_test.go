@@ -18,7 +18,7 @@ var (
 	balanceAbi       = "sols/Balance_sol_Balance.abi"
 	balanceCode      []byte
 	balanceAddress   evm.Address
-	benckmarkBalance = true
+	benckmarkBalance = false
 )
 
 func TestBalanceSol(t *testing.T) {
