@@ -5,6 +5,7 @@ import (
 	"evm/util/math"
 	"math/big"
 	"strings"
+	"time"
 
 	"evm/core"
 	"evm/errors"
@@ -19,6 +20,11 @@ import (
 
 var (
 	log = logrus.WithFields(logrus.Fields{"package": "evm"})
+)
+
+var (
+	OPTime = make(map[int]int64)
+	OPSize = make(map[int]int)
 )
 
 // Here defines some default stack capacity variables
@@ -221,7 +227,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 	var returnData []byte
 
+	var now = time.Now()
 	for {
+		now = time.Now()
 		if maybe.Error() != nil {
 			if maybe.Error() != errors.ExecutionReverted {
 				*ctx.Gas = 0
@@ -1127,6 +1135,12 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("(pc) %-3v Unknown opcode %v\n", pc, op)
 			return nil, maybe.Error()
 		}
+		if _, ok := OPSize[int(op)]; !ok {
+			OPSize[int(op)] = 0
+			OPTime[int(op)] = 0
+		}
+		OPSize[int(op)]++
+		OPTime[int(op)] += int64(time.Since(now))
 		pc++
 	}
 }

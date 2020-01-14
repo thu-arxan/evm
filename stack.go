@@ -6,8 +6,25 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"time"
 
 	"evm/errors"
+)
+
+// Here defines some cost
+var (
+	PushTime       int64
+	PushSize       int64
+	PushUintTime   int64
+	PushUintSize   int64
+	PushBigIntTime int64
+	PushBigIntSize int64
+	PopTime        int64
+	PopSize        int64
+	PopUintTime    int64
+	PopUintSize    int64
+	PopBigIntTime  int64
+	PopBigIntSize  int64
 )
 
 // Stack is the stack that support the running of evm
@@ -36,7 +53,7 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 
 // Push push core.Word256 into stack
 func (st *Stack) Push(word core.Word256) {
-	// st.useGas(GasStackOp)
+	now := time.Now()
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
 		st.pushErr(errors.DataStackOverflow)
@@ -44,6 +61,8 @@ func (st *Stack) Push(word core.Word256) {
 	}
 	st.data[st.ptr] = word
 	st.ptr++
+	PushSize++
+	PushTime += int64(time.Since(now))
 }
 
 // Pop pos a core.Word256 from the stak
@@ -69,7 +88,10 @@ func (st *Stack) PushAddress(address Address) {
 
 // PushUint64 push uint64 into stack
 func (st *Stack) PushUint64(i uint64) {
+	now := time.Now()
 	st.Push(core.Uint64ToWord256(i))
+	PushUintSize++
+	PushUintTime += int64(time.Since(now))
 }
 
 // PopUint64 pop uint64 from stack
@@ -84,8 +106,11 @@ func (st *Stack) PopUint64() uint64 {
 
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
 func (st *Stack) PushBigInt(bigInt *big.Int) core.Word256 {
+	now := time.Now()
 	word := core.LeftPadWord256(core.U256(bigInt).Bytes())
 	st.Push(word)
+	PushBigIntSize++
+	PushBigIntTime += int64(time.Since(now))
 	return word
 }
 
@@ -96,8 +121,12 @@ func (st *Stack) PopSignedBigInt() *big.Int {
 
 // PopBigInt pop big int from stack
 func (st *Stack) PopBigInt() *big.Int {
+	now := time.Now()
 	word := st.Pop()
-	return new(big.Int).SetBytes(word[:])
+	i := new(big.Int).SetBytes(word[:])
+	PopBigIntSize++
+	PopBigIntTime += int64(time.Since(now))
+	return i
 }
 
 // PopBytes pop bytes from stack

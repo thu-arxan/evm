@@ -101,7 +101,7 @@ func mustPack(abiFile, funcName string, inputs ...string) []byte {
 	if err != nil {
 		panic(err)
 	}
-	// fmt.Printf("pack payload is %x\n", values)
+	fmt.Printf("pack payload is %x\n", values)
 	return values
 }
 
