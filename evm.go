@@ -22,6 +22,7 @@ var (
 	log = logrus.WithFields(logrus.Fields{"package": "evm"})
 )
 
+// Here defines some variables to record time infomations
 var (
 	OPTime = make(map[int]int64)
 	OPSize = make(map[int]int)
