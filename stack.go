@@ -70,17 +70,21 @@ func (st *Stack) PushAddress(address Address) {
 
 // PushUint64 push uint64 into stack
 func (st *Stack) PushUint64(i uint64) {
-	st.PushBigInt(new(big.Int).SetUint64(i))
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetUint64(i))
+	} else {
+		st.PushBigInt(new(big.Int).SetUint64(i))
+	}
 }
 
 // PopUint64 pop uint64 from stack
 func (st *Stack) PopUint64() uint64 {
-	word := st.Pop()
-	if Is64BitOverflow(word) {
-		st.pushErr(fmt.Errorf("uint64 overflow from word: %v", word))
+	bi := st.PopBigInt()
+	if !bi.IsUint64() {
+		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
 		return 0
 	}
-	return core.Uint64FromWord256(word)
+	return bi.Uint64()
 }
 
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result

@@ -835,10 +835,11 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case MSTORE: // 0x52
-			// TODO: Find a better way
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			offset, data := stack.PopBigInt(), stack.Pop()
-			gasCost := memory.Write(offset, data.Bytes())
+			offset, val := stack.PopBigInt(), stack.PopBigInt()
+			var data = make([]byte, 32)
+			math.ReadBits(val, data)
+			gasCost := memory.Write(offset, data)
 			maybe.PushError(useGasNegative(ctx.Gas, gasCost))
 			if debug {
 				log.Debugf("  0x%v @ 0x%v", data, offset)
