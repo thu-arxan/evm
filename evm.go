@@ -554,19 +554,18 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SAR: //0x1D
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			shift, x := stack.PopBigInt(), math.S256(stack.PopBigInt())
+			shift, x := stack.PopBigInt(), math.S256(stack.PeekBigInt())
 			if debug {
 				log.Debugf("  %v << %v", x, shift)
 			}
 			if shift.Cmp(core.Big256) >= 0 {
-				reset := big.NewInt(0)
 				if x.Sign() < 0 {
-					reset.SetInt64(-1)
+					x.SetInt64(-1)
+				} else {
+					x.SetInt64(0)
 				}
-				stack.PushBigInt(reset)
 			} else {
-				shiftedValue := x.Rsh(x, uint(shift.Uint64()))
-				stack.PushBigInt(shiftedValue)
+				x.Rsh(x, uint(shift.Uint64()))
 			}
 
 		case SHA3: // 0x20
