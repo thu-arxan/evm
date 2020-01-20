@@ -35,23 +35,33 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 	}
 }
 
-// PushUint64 push uint64 into stack
-func (st *Stack) PushUint64(i uint64) {
-	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
-		st.PushBigInt(st.data[st.ptr].SetUint64(i))
-	} else {
-		st.PushBigInt(new(big.Int).SetUint64(i))
+// PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
+func (st *Stack) PushBigInt(bigInt *big.Int) {
+	err := st.ensureCapacity(uint64(st.ptr) + 1)
+	if err != nil {
+		st.pushErr(errors.DataStackOverflow)
 	}
+	st.data[st.ptr] = bigInt
+	st.ptr++
 }
 
-// PopUint64 pop uint64 from stack
-func (st *Stack) PopUint64() uint64 {
-	bi := st.PopBigInt()
-	if !bi.IsUint64() {
-		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
-		return 0
+// PopBigInt pop big int from stack
+func (st *Stack) PopBigInt() *big.Int {
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
 	}
-	return bi.Uint64()
+	st.ptr--
+	return st.data[st.ptr]
+}
+
+// PeekBigInt peek big int from stack
+func (st *Stack) PeekBigInt() *big.Int {
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
+	}
+	return st.data[st.ptr-1]
 }
 
 // Push push core.Word256 into stack
@@ -85,33 +95,23 @@ func (st *Stack) PushAddress(address Address) {
 	st.Push(core.BytesToWord256(address.Bytes()))
 }
 
-// PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
-func (st *Stack) PushBigInt(bigInt *big.Int) {
-	err := st.ensureCapacity(uint64(st.ptr) + 1)
-	if err != nil {
-		st.pushErr(errors.DataStackOverflow)
+// PushUint64 push uint64 into stack
+func (st *Stack) PushUint64(i uint64) {
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetUint64(i))
+	} else {
+		st.PushBigInt(new(big.Int).SetUint64(i))
 	}
-	st.data[st.ptr] = bigInt
-	st.ptr++
 }
 
-// PopBigInt pop big int from stack
-func (st *Stack) PopBigInt() *big.Int {
-	if st.ptr == 0 {
-		st.pushErr(errors.DataStackUnderflow)
-		return new(big.Int).SetUint64(0)
+// PopUint64 pop uint64 from stack
+func (st *Stack) PopUint64() uint64 {
+	bi := st.PopBigInt()
+	if !bi.IsUint64() {
+		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
+		return 0
 	}
-	st.ptr--
-	return st.data[st.ptr]
-}
-
-// PeekBigInt peek big int from stack
-func (st *Stack) PeekBigInt() *big.Int {
-	if st.ptr == 0 {
-		st.pushErr(errors.DataStackUnderflow)
-		return new(big.Int).SetUint64(0)
-	}
-	return st.data[st.ptr-1]
+	return bi.Uint64()
 }
 
 // PopBytes pop bytes from stack
@@ -147,8 +147,11 @@ func (st *Stack) Dup(n int) {
 		st.pushErr(errors.DataStackUnderflow)
 		return
 	}
-	i := new(big.Int).Set(st.data[st.ptr-n])
-	st.PushBigInt(i)
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].Set(st.data[st.ptr-n]))
+	} else {
+		st.PushBigInt(new(big.Int).Set(st.data[st.ptr-n]))
+	}
 }
 
 // Peek peek the stack element

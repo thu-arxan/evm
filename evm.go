@@ -22,6 +22,10 @@ var (
 	debug = false
 )
 
+var (
+	tt255 = math.BigPow(2, 255)
+)
+
 // Here defines some variables to record time infomations
 var (
 	OPTime = make(map[int]int64)
@@ -36,6 +40,7 @@ const (
 )
 
 func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
@@ -284,21 +289,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SDIV: // 0x05
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PopBigInt())
+			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
 			if debug {
 				log.Debugf("  %v / %v ", x, y)
 			}
-			res := newBigInt0()
 			if y.Sign() == 0 || x.Sign() == 0 {
-				stack.PushBigInt(res)
+				y.SetUint64(0)
 			} else {
 				if x.Sign() != y.Sign() {
-					res.Div(x.Abs(x), y.Abs(y))
-					res.Neg(res)
+					y.Div(x.Abs(x), y.Abs(y))
+					y.Neg(y)
 				} else {
-					res.Div(x.Abs(x), y.Abs(y))
+					y.Div(x.Abs(x), y.Abs(y))
 				}
-				stack.PushBigInt(math.U256(res))
+				math.U256(y)
 			}
 
 		case MOD: // 0x06
@@ -315,62 +319,72 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SMOD: // 0x07
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PopBigInt())
+			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
-			res := newBigInt0()
 			if y.Sign() == 0 {
-				stack.PushBigInt(res)
+				y.SetUint64(0)
 			} else {
 				if x.Sign() < 0 {
-					res.Mod(x.Abs(x), y.Abs(y))
-					res.Neg(res)
+					y.Mod(x.Abs(x), y.Abs(y))
+					y.Neg(y)
 				} else {
-					res.Mod(x.Abs(x), y.Abs(y))
+					y.Mod(x.Abs(x), y.Abs(y))
 				}
-				stack.PushBigInt(math.U256(res))
+				math.U256(y)
 			}
 
 		case ADDMOD: // 0x08
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Mid))
-			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
+			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
 			if z.Sign() == 0 {
-				stack.PushBigInt(x.SetUint64(0))
+				z.SetUint64(0)
 			} else {
 				x.Add(x, y)
-				x.Mod(x, z)
-				stack.PushBigInt(math.U256(x))
+				z.Mod(x, z)
+				math.U256(z)
 			}
 
 		case MULMOD: // 0x09
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Mid))
-			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
+			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
 			if z.Sign() == 0 {
-				stack.PushBigInt(x.SetUint64(0))
+				// stack.PushBigInt(x.SetUint64(0))
+				z.SetUint64(0)
 			} else {
 				x.Mul(x, y)
-				x.Mod(x, z)
-				stack.PushBigInt(math.U256(x))
+				z.Mod(x, z)
+				math.U256(z)
 			}
 
 		case EXP: // 0x0A
-			x, y := stack.PopBigInt(), stack.PopBigInt()
-			if y.Sign() == 0 {
+			base, exponent := stack.PopBigInt(), stack.PeekBigInt()
+			if debug {
+				log.Debugf("  %v ** %v", base, exponent)
+			}
+			if exponent.Sign() == 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp))
 			} else {
-				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(y))))
+				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(exponent))))
 			}
-			pow := new(big.Int).Exp(x, y, nil)
-			stack.PushBigInt(pow)
-			if debug {
-				log.Debugf("  %v ** %v", x, y)
+			cmpToOne := exponent.Cmp(math.Big1)
+			if cmpToOne < 0 { // Exponent is zero
+				// x ^ 0 == 1
+				exponent.SetUint64(1)
+			} else if base.Sign() == 0 {
+				// 0 ^ y, if y != 0, == 0
+				exponent.SetUint64(0)
+			} else if cmpToOne == 0 { // Exponent is one
+				// x ^ 1 == x
+			} else {
+				exponent = math.Exp(base, exponent)
 			}
 
 		case SIGNEXTEND: // 0x0B
@@ -421,8 +435,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			x, y := stack.PopBigInt(), stack.PeekBigInt()
 
-			xSign := x.Cmp(math.BigPow(2, 255))
-			ySign := y.Cmp(math.BigPow(2, 255))
+			xSign := x.Cmp(tt255)
+			ySign := y.Cmp(tt255)
 			if debug {
 				log.Debugf("  %v < %v ", x, y)
 			}
@@ -440,16 +454,25 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SGT: // 0x13
-			// todo: peek to speed up
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
+			x, y := stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v > %v", x, y)
 			}
-			if x.Cmp(y) > 0 {
-				y.SetUint64(1)
-			} else {
+			xSign := x.Cmp(tt255)
+			ySign := y.Cmp(tt255)
+
+			switch {
+			case xSign >= 0 && ySign < 0:
 				y.SetUint64(0)
+			case xSign < 0 && ySign >= 0:
+				y.SetUint64(1)
+			default:
+				if x.Cmp(y) > 0 {
+					y.SetUint64(1)
+				} else {
+					y.SetUint64(0)
+				}
 			}
 
 		case EQ: // 0x14
@@ -536,20 +559,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SHR: //0x1C
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			// TODO: Some thing wrong will happen if we change this, need to be rethink this
-			shift, x := stack.PopBigInt(), stack.PopBigInt()
+			shift, x := stack.PopBigInt(), stack.PeekBigInt()
+			if debug {
+				log.Debugf("  %v << %v", x, shift)
+			}
 			if shift.Cmp(math.Big256) >= 0 {
-				reset := big.NewInt(0)
-				stack.PushBigInt(reset)
-				if debug {
-					log.Debugf("  %v << %v = %v", x, shift, reset)
-				}
+				x.SetUint64(0)
 			} else {
-				shiftedValue := x.Rsh(x, uint(shift.Uint64()))
-				stack.PushBigInt(shiftedValue)
-				if debug {
-					log.Debugf("  %v << %v = %v", x, shift, shiftedValue)
-				}
+				x.Rsh(x, uint(shift.Uint64()))
 			}
 
 		case SAR: //0x1D
@@ -604,6 +621,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case CALLER: // 0x33
+			// todo:2x time
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Base))
 			stack.PushAddress(caller)
 			if debug {
@@ -624,7 +642,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			if err != nil {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
-			// TODO: We do not need word256 as middle variable
 			res := core.LeftPadWord256(data)
 			offset.SetBytes(res.Bytes())
 			if debug {
@@ -979,7 +996,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			n := int(op - SWAP1 + 2)
 			stack.Swap(n)
-			// log.Debugf("  [%d] %v", int(op-SWAP1+2), 0)
+			if debug {
+				log.Debugf("  [%d] %v", int(op-SWAP1+2), 0)
+			}
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
 			n := int(op - LOG0)
