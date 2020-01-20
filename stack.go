@@ -10,22 +10,6 @@ import (
 	"evm/errors"
 )
 
-// Here defines some cost
-var (
-	// PushTime int64
-	// PushSize int64
-	// PushUintTime int64
-	// PushUintSize int64
-	// PushBigIntTime int64
-	// PushBigIntSize int64
-	PopTime     int64
-	PopSize     int64
-	PopUintTime int64
-	PopUintSize int64
-	// PopBigIntTime  int64
-	// PopBigIntSize  int64
-)
-
 // Stack is the stack that support the running of evm
 // Note: The stack is not thread safety
 type Stack struct {

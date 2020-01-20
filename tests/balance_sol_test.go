@@ -88,7 +88,7 @@ func TestBalanceSolBenchmark(t *testing.T) {
 
 	var begin = time.Now()
 	var size = 10000
-	evm.SetLogLevel("info")
+	evm.SetDebug(false)
 	for i := 0; i < size; i++ {
 		var gas uint64 = 1000000
 		vm := evm.New(bc, memoryDB, &evm.Context{
