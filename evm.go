@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"evm/util/math"
 	"math/big"
-	"time"
 
 	"evm/core"
 	"evm/errors"
@@ -24,12 +23,6 @@ var (
 
 var (
 	tt255 = math.BigPow(2, 255)
-)
-
-// Here defines some variables to record time infomations
-var (
-	OPTime = make(map[int]int64)
-	OPSize = make(map[int]int)
 )
 
 // Here defines some default stack capacity variables
@@ -236,7 +229,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 	var returnData []byte
 
-	var now = time.Now()
 	for {
 		if maybe.Error() != nil {
 			if maybe.Error() != errors.ExecutionReverted {
@@ -244,7 +236,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 			return nil, maybe.Error()
 		}
-		now = time.Now()
+
 		var op = getOpCode(code, pc)
 		if debug {
 			log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
@@ -1263,12 +1255,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 			return nil, maybe.Error()
 		}
-		if _, ok := OPSize[int(op)]; !ok {
-			OPSize[int(op)] = 0
-			OPTime[int(op)] = 0
-		}
-		OPSize[int(op)]++
-		OPTime[int(op)] += int64(time.Since(now))
 		pc++
 	}
 }
@@ -1366,12 +1352,4 @@ func isEmptyAccount(account Account) bool {
 
 func wordGas(length, copyGas uint64) uint64 {
 	return (length + 31) / 32 * copyGas
-}
-
-func newBigInt0() *big.Int {
-	return new(big.Int).SetUint64(0)
-}
-
-func newBigInt1() *big.Int {
-	return new(big.Int).SetUint64(1)
 }

@@ -6,7 +6,6 @@ import (
 	"evm/example"
 	"evm/util"
 	"fmt"
-	"sort"
 	"testing"
 	"time"
 
@@ -79,14 +78,6 @@ func TestBenchmarkAllSol(t *testing.T) {
 	call(t, bc, memoryDB, caller, moneyAddress, moneyCode, payload, size)
 	duration := time.Since(begin)
 	fmt.Printf("%d times running cost %v\n", size, duration)
-	var ops []int
-	for op := range evm.OPSize {
-		ops = append(ops, op)
-	}
-	sort.Ints(ops)
-	for _, op := range ops {
-		fmt.Printf("[%d](%s) %d times, each %d ns\n", op, evm.OpCode(op).String(), evm.OPSize[op], evm.OPTime[op]/int64(evm.OPSize[op]))
-	}
 }
 
 func call(t *testing.T, bc evm.Blockchain, db evm.DB, caller evm.Address, contract evm.Address, code, payload []byte, times int) {
