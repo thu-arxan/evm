@@ -22,6 +22,10 @@ var (
 	debug = false
 )
 
+var (
+	tt255 = math.BigPow(2, 255)
+)
+
 // Here defines some variables to record time infomations
 var (
 	OPTime = make(map[int]int64)
@@ -361,17 +365,17 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case EXP: // 0x0A
-			x, y := stack.PopBigInt(), stack.PopBigInt()
+			// todo: should we use math.Exp also have great performance?
+			x, y := stack.PopBigInt(), stack.PeekBigInt()
+			if debug {
+				log.Debugf("  %v ** %v", x, y)
+			}
 			if y.Sign() == 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp))
 			} else {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(y))))
 			}
-			pow := new(big.Int).Exp(x, y, nil)
-			stack.PushBigInt(pow)
-			if debug {
-				log.Debugf("  %v ** %v", x, y)
-			}
+			y.Exp(x, y, nil)
 
 		case SIGNEXTEND: // 0x0B
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
@@ -421,8 +425,8 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			x, y := stack.PopBigInt(), stack.PeekBigInt()
 
-			xSign := x.Cmp(math.BigPow(2, 255))
-			ySign := y.Cmp(math.BigPow(2, 255))
+			xSign := x.Cmp(tt255)
+			ySign := y.Cmp(tt255)
 			if debug {
 				log.Debugf("  %v < %v ", x, y)
 			}
@@ -440,7 +444,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case SGT: // 0x13
-			// todo: peek to speed up
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
 			if debug {
@@ -604,6 +607,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case CALLER: // 0x33
+			// todo:2x time
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Base))
 			stack.PushAddress(caller)
 			if debug {
@@ -979,7 +983,9 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			n := int(op - SWAP1 + 2)
 			stack.Swap(n)
-			// log.Debugf("  [%d] %v", int(op-SWAP1+2), 0)
+			if debug {
+				log.Debugf("  [%d] %v", int(op-SWAP1+2), 0)
+			}
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
 			n := int(op - LOG0)
