@@ -30,7 +30,8 @@ var (
 // Stack is the stack that support the running of evm
 // Note: The stack is not thread safety
 type Stack struct {
-	data        []core.Word256
+	// data        []core.Word256
+	data        []*big.Int
 	maxCapacity uint64
 	ptr         int
 
@@ -43,7 +44,7 @@ type Stack struct {
 // NewStack is the constructor of Stack
 func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink errors.Sink, toAddressFunc func(bytes []byte) Address) *Stack {
 	return &Stack{
-		data:          make([]core.Word256, initialCapacity),
+		data:          make([]*big.Int, initialCapacity),
 		maxCapacity:   maxCapacity,
 		gas:           gas,
 		errSink:       errSink,
@@ -59,7 +60,7 @@ func (st *Stack) Push(word core.Word256) {
 		st.pushErr(errors.DataStackOverflow)
 		return
 	}
-	st.data[st.ptr] = word
+	st.data[st.ptr] = new(big.Int).SetBytes(word.Bytes())
 	st.ptr++
 	PushSize++
 	PushTime += int64(time.Since(now))
@@ -72,7 +73,8 @@ func (st *Stack) Pop() core.Word256 {
 		return core.Zero256
 	}
 	st.ptr--
-	return st.data[st.ptr]
+	i := st.data[st.ptr]
+	return core.BytesToWord256(i.Bytes())
 }
 
 // PushBytes push bytes into stack, bytes length would fixed to 32
@@ -105,13 +107,19 @@ func (st *Stack) PopUint64() uint64 {
 }
 
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
+// TODO: We should not return anything
 func (st *Stack) PushBigInt(bigInt *big.Int) core.Word256 {
 	now := time.Now()
-	word := core.LeftPadWord256(core.U256(bigInt).Bytes())
-	st.Push(word)
+	err := st.ensureCapacity(uint64(st.ptr) + 1)
+	if err != nil {
+		st.pushErr(errors.DataStackOverflow)
+		return core.Zero256
+	}
+	st.data[st.ptr] = bigInt
+	st.ptr++
 	PushBigIntSize++
 	PushBigIntTime += int64(time.Since(now))
-	return word
+	return core.Zero256
 }
 
 // PopSignedBigInt pop signed big int from stack
@@ -122,11 +130,23 @@ func (st *Stack) PopSignedBigInt() *big.Int {
 // PopBigInt pop big int from stack
 func (st *Stack) PopBigInt() *big.Int {
 	now := time.Now()
-	word := st.Pop()
-	i := new(big.Int).SetBytes(word[:])
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
+	}
+	st.ptr--
 	PopBigIntSize++
 	PopBigIntTime += int64(time.Since(now))
-	return i
+	return st.data[st.ptr]
+}
+
+// PeekBigInt peek big int from stack
+func (st *Stack) PeekBigInt() *big.Int {
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
+	}
+	return st.data[st.ptr-1]
 }
 
 // PopBytes pop bytes from stack
@@ -164,7 +184,8 @@ func (st *Stack) Dup(n int) {
 		st.pushErr(errors.DataStackUnderflow)
 		return
 	}
-	st.Push(st.data[st.ptr-n])
+	word := core.BytesToWord256(st.data[st.ptr-n].Bytes())
+	st.Push(word)
 }
 
 // Peek peek the stack element
@@ -173,7 +194,8 @@ func (st *Stack) Peek() core.Word256 {
 		st.pushErr(errors.DataStackUnderflow)
 		return core.Zero256
 	}
-	return st.data[st.ptr-1]
+	word := core.BytesToWord256(st.data[st.ptr-1].Bytes())
+	return word
 }
 
 // Print print stack status
@@ -230,21 +252,13 @@ func (st *Stack) ensureCapacity(newCapacity uint64) error {
 	// the data's backing array.
 	for newCapacityInt > cap(st.data) {
 		// We'll trust Go exponentially grow our arrays (at first).
-		st.data = append(st.data, core.Zero256)
+		st.data = append(st.data, new(big.Int))
 	}
 	// Now we've ensured the backing array of the data is big enough we can
 	// just re-data (even if len(mem.data) < newCapacity)
 	st.data = st.data[:newCapacity]
 	return nil
 }
-
-// func (st *Stack) useGas(gasToUse uint64) {
-// 	if *st.gas > gasToUse {
-// 		*st.gas -= gasToUse
-// 	} else {
-// 		st.pushErr(errors.InsufficientGas)
-// 	}
-// }
 
 func (st *Stack) pushErr(err error) {
 	st.errSink.PushError(err)
