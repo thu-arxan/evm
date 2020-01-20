@@ -372,21 +372,18 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			} else {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(exponent))))
 			}
-			exponent.Exp(base, exponent, nil)
-			// todo: exp may be wrong
-			// cmpToOne := exponent.Cmp(big1)
-			// if cmpToOne < 0 { // Exponent is zero
-			// 	// x ^ 0 == 1
-			// 	stack.PushBigInt(base.SetUint64(1))
-			// } else if base.Sign() == 0 {
-			// 	// 0 ^ y, if y != 0, == 0
-			// 	stack.PushBigInt(base.SetUint64(0))
-			// } else if cmpToOne == 0 { // Exponent is one
-			// 	// x ^ 1 == x
-			// 	stack.PushBigInt(base)
-			// } else {
-			// 	stack.PushBigInt(math.Exp(base, exponent))
-			// }
+			cmpToOne := exponent.Cmp(math.Big1)
+			if cmpToOne < 0 { // Exponent is zero
+				// x ^ 0 == 1
+				exponent.SetUint64(1)
+			} else if base.Sign() == 0 {
+				// 0 ^ y, if y != 0, == 0
+				exponent.SetUint64(0)
+			} else if cmpToOne == 0 { // Exponent is one
+				// x ^ 1 == x
+			} else {
+				exponent = math.Exp(base, exponent)
+			}
 
 		case SIGNEXTEND: // 0x0B
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
@@ -643,7 +640,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			if err != nil {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
-			// TODO: We do not need word256 as middle variable
 			res := core.LeftPadWord256(data)
 			offset.SetBytes(res.Bytes())
 			if debug {
