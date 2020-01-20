@@ -129,7 +129,7 @@ func TestBalanceSolBenchmark(t *testing.T) {
 	}
 	sort.Ints(ops)
 	for _, op := range ops {
-		fmt.Printf("[%d](%s) each %d ns\n", op, evm.OpCode(op).String(), evm.OPTime[op]/int64(evm.OPSize[op]))
+		fmt.Printf("[%d](%s) %d times, each %d ns\n", op, evm.OpCode(op).String(), evm.OPSize[op], evm.OPTime[op]/int64(evm.OPSize[op]))
 	}
 	// // then we test parallel call performance
 	// var params = make([]*evm.CallParameter, size)

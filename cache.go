@@ -81,7 +81,8 @@ func (cache *Cache) Suicide(address Address) error {
 
 // GetStorage returns the key of an address if exist, else returns an error
 func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
-	// cache.reads[getStorageKey(address, key)] = true
+	// Note: cost > 200ns, if we can speed this up?
+	cache.reads[getStorageKey(address, key)] = true
 	accInfo := cache.get(address)
 	storageKey := word256ToString(key)
 	if value, ok := accInfo.storage[storageKey]; ok {
@@ -139,8 +140,8 @@ func (cache *Cache) Sync() {
 // get the cache accountInfo item creating it if necessary
 func (cache *Cache) get(address Address) *accountInfo {
 	key := addressToString(address)
-	if util.Contain(cache.accounts, key) {
-		return cache.accounts[key]
+	if account, ok := cache.accounts[key]; ok {
+		return account
 	}
 	// Then try to load from db
 	// todo: should return error?
