@@ -363,17 +363,30 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			}
 
 		case EXP: // 0x0A
-			// todo: should we use math.Exp also have great performance?
-			x, y := stack.PopBigInt(), stack.PeekBigInt()
+			base, exponent := stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
-				log.Debugf("  %v ** %v", x, y)
+				log.Debugf("  %v ** %v", base, exponent)
 			}
-			if y.Sign() == 0 {
+			if exponent.Sign() == 0 {
 				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp))
 			} else {
-				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(y))))
+				maybe.PushError(useGasNegative(ctx.Gas, gas.Exp+gas.ExpByte*uint64(1+util.Log256(exponent))))
 			}
-			y.Exp(x, y, nil)
+			exponent.Exp(base, exponent, nil)
+			// todo: exp may be wrong
+			// cmpToOne := exponent.Cmp(big1)
+			// if cmpToOne < 0 { // Exponent is zero
+			// 	// x ^ 0 == 1
+			// 	stack.PushBigInt(base.SetUint64(1))
+			// } else if base.Sign() == 0 {
+			// 	// 0 ^ y, if y != 0, == 0
+			// 	stack.PushBigInt(base.SetUint64(0))
+			// } else if cmpToOne == 0 { // Exponent is one
+			// 	// x ^ 1 == x
+			// 	stack.PushBigInt(base)
+			// } else {
+			// 	stack.PushBigInt(math.Exp(base, exponent))
+			// }
 
 		case SIGNEXTEND: // 0x0B
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
@@ -547,20 +560,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SHR: //0x1C
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			// TODO: Some thing wrong will happen if we change this, need to be rethink this
-			shift, x := stack.PopBigInt(), stack.PopBigInt()
+			shift, x := stack.PopBigInt(), stack.PeekBigInt()
+			if debug {
+				log.Debugf("  %v << %v", x, shift)
+			}
 			if shift.Cmp(math.Big256) >= 0 {
-				reset := big.NewInt(0)
-				stack.PushBigInt(reset)
-				if debug {
-					log.Debugf("  %v << %v = %v", x, shift, reset)
-				}
+				x.SetUint64(0)
 			} else {
-				shiftedValue := x.Rsh(x, uint(shift.Uint64()))
-				stack.PushBigInt(shiftedValue)
-				if debug {
-					log.Debugf("  %v << %v = %v", x, shift, shiftedValue)
-				}
+				x.Rsh(x, uint(shift.Uint64()))
 			}
 
 		case SAR: //0x1D
