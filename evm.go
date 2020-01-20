@@ -40,6 +40,7 @@ const (
 )
 
 func init() {
+	logrus.SetFormatter(&logrus.TextFormatter{DisableTimestamp: true})
 	if debug {
 		logrus.SetLevel(logrus.DebugLevel)
 	} else {
@@ -336,30 +337,31 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case ADDMOD: // 0x08
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Mid))
-			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
+			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
 			if z.Sign() == 0 {
-				stack.PushBigInt(x.SetUint64(0))
+				z.SetUint64(0)
 			} else {
 				x.Add(x, y)
-				x.Mod(x, z)
-				stack.PushBigInt(math.U256(x))
+				z.Mod(x, z)
+				math.U256(z)
 			}
 
 		case MULMOD: // 0x09
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Mid))
-			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PopBigInt()
+			x, y, z := stack.PopBigInt(), stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
 			if z.Sign() == 0 {
-				stack.PushBigInt(x.SetUint64(0))
+				// stack.PushBigInt(x.SetUint64(0))
+				z.SetUint64(0)
 			} else {
 				x.Mul(x, y)
-				x.Mod(x, z)
-				stack.PushBigInt(math.U256(x))
+				z.Mod(x, z)
+				math.U256(z)
 			}
 
 		case EXP: // 0x0A
