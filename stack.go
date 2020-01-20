@@ -179,16 +179,6 @@ func (st *Stack) Print(n int) {
 	fmt.Println("#############")
 }
 
-// Is64BitOverflow return if the word overflow
-func Is64BitOverflow(word core.Word256) bool {
-	for i := 0; i < len(word)-8; i++ {
-		if word[i] != 0 {
-			return true
-		}
-	}
-	return false
-}
-
 // Ensures the current stack can hold a new element. Will only grow the
 // backing array (will not shrink).
 func (st *Stack) ensureCapacity(newCapacity uint64) error {
