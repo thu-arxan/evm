@@ -288,21 +288,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SDIV: // 0x05
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PopBigInt())
+			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
 			if debug {
 				log.Debugf("  %v / %v ", x, y)
 			}
-			res := newBigInt0()
 			if y.Sign() == 0 || x.Sign() == 0 {
-				stack.PushBigInt(res)
+				y.SetUint64(0)
 			} else {
 				if x.Sign() != y.Sign() {
-					res.Div(x.Abs(x), y.Abs(y))
-					res.Neg(res)
+					y.Div(x.Abs(x), y.Abs(y))
+					y.Neg(y)
 				} else {
-					res.Div(x.Abs(x), y.Abs(y))
+					y.Div(x.Abs(x), y.Abs(y))
 				}
-				stack.PushBigInt(math.U256(res))
+				math.U256(y)
 			}
 
 		case MOD: // 0x06
@@ -319,21 +318,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SMOD: // 0x07
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Low))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PopBigInt())
+			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
 			if debug {
 				log.Debugf("  %v %% %v", x, y)
 			}
-			res := newBigInt0()
 			if y.Sign() == 0 {
-				stack.PushBigInt(res)
+				y.SetUint64(0)
 			} else {
 				if x.Sign() < 0 {
-					res.Mod(x.Abs(x), y.Abs(y))
-					res.Neg(res)
+					y.Mod(x.Abs(x), y.Abs(y))
+					y.Neg(y)
 				} else {
-					res.Mod(x.Abs(x), y.Abs(y))
+					y.Mod(x.Abs(x), y.Abs(y))
 				}
-				stack.PushBigInt(math.U256(res))
+				math.U256(y)
 			}
 
 		case ADDMOD: // 0x08
