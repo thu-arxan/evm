@@ -142,12 +142,13 @@ func (st *Stack) Swap(n int) {
 }
 
 // Dup duplicate stack
+// Note: We can not use an exist big.Int to replace a new one, because if we do this then
+// to element would be same and the change of one will affect another one
 func (st *Stack) Dup(n int) {
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
 	}
-	// todo: why we can not use an exist big.Int to replace a new one?
 	i := new(big.Int).Set(st.data[st.ptr-n])
 	st.PushBigInt(i)
 }
