@@ -88,7 +88,6 @@ func (st *Stack) PopUint64() uint64 {
 }
 
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
-// TODO: We should not return anything
 func (st *Stack) PushBigInt(bigInt *big.Int) {
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
