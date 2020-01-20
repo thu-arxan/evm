@@ -14,10 +14,6 @@ type Cache struct {
 	readonly bool
 	accounts map[string]*accountInfo
 	logs     []*Log
-	// below means to help find conflicts
-	sets          map[string]bool
-	reads         map[string]bool
-	accountUpdate bool
 }
 
 type accountInfo struct {
@@ -31,8 +27,6 @@ func NewCache(db DB) *Cache {
 	return &Cache{
 		db:       db,
 		accounts: make(map[string]*accountInfo),
-		sets:     make(map[string]bool),
-		reads:    make(map[string]bool),
 	}
 }
 
@@ -62,7 +56,6 @@ func (cache *Cache) GetAccount(addr Address) Account {
 
 // UpdateAccount set account
 func (cache *Cache) UpdateAccount(account Account) error {
-	cache.accountUpdate = true
 	accInfo := cache.get(account.GetAddress())
 	if accInfo.account.HasSuicide() {
 		return fmt.Errorf("UpdateAccount on a removed account: %s", account.GetAddress())
@@ -81,8 +74,6 @@ func (cache *Cache) Suicide(address Address) error {
 
 // GetStorage returns the key of an address if exist, else returns an error
 func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
-	// Note: cost > 200ns, if we can speed this up?
-	cache.reads[getStorageKey(address, key)] = true
 	accInfo := cache.get(address)
 	storageKey := word256ToString(key)
 	if value, ok := accInfo.storage[storageKey]; ok {
@@ -101,7 +92,6 @@ func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
 // NOTE: Set value to zero to remove. How should i understand this?
 // TODO: Review this
 func (cache *Cache) SetStorage(address Address, key core.Word256, value []byte) {
-	cache.sets[getStorageKey(address, key)] = true
 	accInfo := cache.get(address)
 	// todo: how to deal account removed
 	// if accInfo.removed {

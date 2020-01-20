@@ -131,46 +131,4 @@ func TestBalanceSolBenchmark(t *testing.T) {
 	for _, op := range ops {
 		fmt.Printf("[%d](%s) %d times, each %d ns\n", op, evm.OpCode(op).String(), evm.OPSize[op], evm.OPTime[op]/int64(evm.OPSize[op]))
 	}
-	// // then we test parallel call performance
-	// var params = make([]*evm.CallParameter, size)
-	// var ctx = &evm.Context{}
-	// begin = time.Now()
-	// for i := 0; i < size; i++ {
-	// 	params[i] = &evm.CallParameter{
-	// 		Caller: caller,
-	// 		Callee: balanceAddress,
-	// 		Code:   balanceCode,
-	// 		Gas:    100000,
-	// 		Input:  payload,
-	// 		Value:  0,
-	// 	}
-	// }
-	// results := evm.ParallelCall(bc, memoryDB, ctx, params)
-	// for i := range results {
-	// 	require.NoError(t, results[i].Err)
-	// }
-	// duration = time.Since(begin)
-	// fmt.Printf("parallel call balance %d times cost %v\n", size, duration)
-	// // add some conflicts
-	// begin = time.Now()
-	// var setIdx = 3 * size / 4
-	// for i := 0; i < size; i++ {
-	// 	params[i] = &evm.CallParameter{
-	// 		Caller: caller,
-	// 		Callee: balanceAddress,
-	// 		Code:   balanceCode,
-	// 		Gas:    100000,
-	// 		Input:  payload,
-	// 		Value:  0,
-	// 	}
-	// 	if i == setIdx {
-	// 		params[i].Input = mustPack(balanceAbi, "set", "20")
-	// 	}
-	// }
-	// results = evm.ParallelCall(bc, memoryDB, ctx, params)
-	// for i := range results {
-	// 	require.NoError(t, results[i].Err)
-	// }
-	// duration = time.Since(begin)
-	// fmt.Printf("parallel call balance with conflict %d times cost %v\n", size, duration)
 }
