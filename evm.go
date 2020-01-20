@@ -230,7 +230,6 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 	var now = time.Now()
 	for {
-		now = time.Now()
 		if maybe.Error() != nil {
 			if maybe.Error() != errors.ExecutionReverted {
 				*ctx.Gas = 0
@@ -240,7 +239,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		var op = getOpCode(code, pc)
 		log.Debugf("(pc) %-3d (op) %-14s (st) %-4d (gas) %d", pc, op.String(), stack.Len(), *ctx.Gas)
-
+		now = time.Now()
 		switch op {
 		case ADD: // 0x01
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
@@ -555,14 +554,14 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case CALLDATALOAD: // 0x35
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			// TODO: Peek and set bytes
-			offset := stack.PopUint64()
-			data, err := util.SubSlice(ctx.Input, offset, 32)
+			offset := stack.PeekBigInt()
+			data, err := util.SubSlice(ctx.Input, offset.Uint64(), 32)
 			if err != nil {
 				maybe.PushError(errors.InputOutOfBounds)
 			}
+			// TODO: We do not need word256 as middle variable
 			res := core.LeftPadWord256(data)
-			stack.Push(res)
+			offset.SetBytes(res.Bytes())
 			log.Debugf("=> 0x%v\n", res)
 
 		case CALLDATASIZE: // 0x36
@@ -713,18 +712,20 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case POP: // 0x50
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Base))
-			popped := stack.Pop()
-			log.Debugf("=> 0x%v\n", popped)
+			popped := stack.PopBigInt()
+			log.Debugf("=> 0x%v\n", popped.Bytes())
 
 		case MLOAD: // 0x51
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			offset := stack.PopBigInt()
+			offset := stack.PeekBigInt()
 			data, memoryGas := memory.Read(offset, core.BigWord256Bytes)
 			maybe.PushError(useGasNegative(ctx.Gas, memoryGas))
-			stack.Push(core.LeftPadWord256(data))
+			// TODO: We do not need word256 as middle variable
+			offset.SetBytes(core.LeftPadWord256(data).Bytes())
 			log.Debugf("=> 0x%X @ 0x%v\n", data, offset)
 
 		case MSTORE: // 0x52
+			// TODO: Find a better way
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			offset, data := stack.PopBigInt(), stack.Pop()
 			gasCost := memory.Write(offset, data.Bytes())
@@ -741,11 +742,12 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			log.Debugf("=> [%v] 0x%X\n", offset, val)
 
 		case SLOAD: // 0x54
+			// TODO: SLOAD is too slow!!!
 			maybe.PushError(useGasNegative(ctx.Gas, gas.Sload))
-			loc := stack.Pop()
-			value := evm.cache.GetStorage(callee, loc)
+			loc := stack.PeekBigInt()
+			value := evm.cache.GetStorage(callee, core.BytesToWord256(loc.Bytes()))
 			data := core.LeftPadWord256(value)
-			stack.Push(data)
+			loc.SetBytes(data.Bytes())
 			log.Debugf("%v {0x%v = 0x%v}\n", callee, loc, data)
 
 		case SSTORE: // 0x55
@@ -850,7 +852,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
 			n := int(op - SWAP1 + 2)
 			stack.Swap(n)
-			log.Debugf("=> [%d] %v\n", n, stack.Peek())
+			// log.Debugf("=> [%d] %v\n", int(op-SWAP1+2), 0)
 
 		case LOG0, LOG1, LOG2, LOG3, LOG4:
 			n := int(op - LOG0)
@@ -1123,6 +1125,7 @@ func (evm *EVM) createAccount(creator, address Address) error {
 	return evm.cache.UpdateAccount(account)
 }
 
+// todo: if there is a better way to do this?
 func getOpCode(code []byte, n uint64) OpCode {
 	if uint64(len(code)) <= n {
 		return STOP

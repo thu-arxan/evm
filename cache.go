@@ -81,17 +81,18 @@ func (cache *Cache) Suicide(address Address) error {
 
 // GetStorage returns the key of an address if exist, else returns an error
 func (cache *Cache) GetStorage(address Address, key core.Word256) []byte {
-	cache.reads[getStorageKey(address, key)] = true
+	// cache.reads[getStorageKey(address, key)] = true
 	accInfo := cache.get(address)
-	if util.Contain(accInfo.storage, word256ToString(key)) {
-		return accInfo.storage[word256ToString(key)]
+	storageKey := word256ToString(key)
+	if value, ok := accInfo.storage[storageKey]; ok {
+		return value
 	}
 	value := cache.db.GetStorage(address, key.Bytes())
 	// avoid the db just return nil if storage is not exist
 	if len(value) == 0 {
 		value = make([]byte, 32)
 	}
-	accInfo.storage[word256ToString(key)] = value
+	accInfo.storage[storageKey] = value
 	return value
 }
 

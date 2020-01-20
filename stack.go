@@ -6,25 +6,24 @@ import (
 	"fmt"
 	"math"
 	"math/big"
-	"time"
 
 	"evm/errors"
 )
 
 // Here defines some cost
 var (
-	PushTime       int64
-	PushSize       int64
-	PushUintTime   int64
-	PushUintSize   int64
-	PushBigIntTime int64
-	PushBigIntSize int64
-	PopTime        int64
-	PopSize        int64
-	PopUintTime    int64
-	PopUintSize    int64
-	PopBigIntTime  int64
-	PopBigIntSize  int64
+	// PushTime int64
+	// PushSize int64
+	// PushUintTime int64
+	// PushUintSize int64
+	// PushBigIntTime int64
+	// PushBigIntSize int64
+	PopTime     int64
+	PopSize     int64
+	PopUintTime int64
+	PopUintSize int64
+	// PopBigIntTime  int64
+	// PopBigIntSize  int64
 )
 
 // Stack is the stack that support the running of evm
@@ -54,7 +53,6 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 
 // Push push core.Word256 into stack
 func (st *Stack) Push(word core.Word256) {
-	now := time.Now()
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
 		st.pushErr(errors.DataStackOverflow)
@@ -62,8 +60,6 @@ func (st *Stack) Push(word core.Word256) {
 	}
 	st.data[st.ptr] = new(big.Int).SetBytes(word.Bytes())
 	st.ptr++
-	PushSize++
-	PushTime += int64(time.Since(now))
 }
 
 // Pop pos a core.Word256 from the stak
@@ -90,10 +86,7 @@ func (st *Stack) PushAddress(address Address) {
 
 // PushUint64 push uint64 into stack
 func (st *Stack) PushUint64(i uint64) {
-	now := time.Now()
-	st.Push(core.Uint64ToWord256(i))
-	PushUintSize++
-	PushUintTime += int64(time.Since(now))
+	st.PushBigInt(new(big.Int).SetUint64(i))
 }
 
 // PopUint64 pop uint64 from stack
@@ -109,7 +102,6 @@ func (st *Stack) PopUint64() uint64 {
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
 // TODO: We should not return anything
 func (st *Stack) PushBigInt(bigInt *big.Int) core.Word256 {
-	now := time.Now()
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
 		st.pushErr(errors.DataStackOverflow)
@@ -117,8 +109,6 @@ func (st *Stack) PushBigInt(bigInt *big.Int) core.Word256 {
 	}
 	st.data[st.ptr] = bigInt
 	st.ptr++
-	PushBigIntSize++
-	PushBigIntTime += int64(time.Since(now))
 	return core.Zero256
 }
 
@@ -129,14 +119,11 @@ func (st *Stack) PopSignedBigInt() *big.Int {
 
 // PopBigInt pop big int from stack
 func (st *Stack) PopBigInt() *big.Int {
-	now := time.Now()
 	if st.ptr == 0 {
 		st.pushErr(errors.DataStackUnderflow)
 		return new(big.Int).SetUint64(0)
 	}
 	st.ptr--
-	PopBigIntSize++
-	PopBigIntTime += int64(time.Since(now))
 	return st.data[st.ptr]
 }
 
@@ -169,7 +156,6 @@ func (st *Stack) Len() int {
 
 // Swap swap stack
 func (st *Stack) Swap(n int) {
-	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
@@ -179,13 +165,12 @@ func (st *Stack) Swap(n int) {
 
 // Dup duplicate stack
 func (st *Stack) Dup(n int) {
-	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
 	}
-	word := core.BytesToWord256(st.data[st.ptr-n].Bytes())
-	st.Push(word)
+	i := new(big.Int).Set(st.data[st.ptr-n])
+	st.PushBigInt(i)
 }
 
 // Peek peek the stack element
