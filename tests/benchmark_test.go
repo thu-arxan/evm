@@ -13,7 +13,14 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+var (
+	benchmark = false
+)
+
 func TestBenchmarkAllSol(t *testing.T) {
+	if !benchmark {
+		return
+	}
 	bc := example.NewBlockchain()
 	memoryDB := db.NewMemory(bc.NewAccount)
 	var caller = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
