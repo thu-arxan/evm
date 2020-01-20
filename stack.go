@@ -98,11 +98,6 @@ func (st *Stack) PushBigInt(bigInt *big.Int) {
 	st.ptr++
 }
 
-// PopSignedBigInt pop signed big int from stack
-func (st *Stack) PopSignedBigInt() *big.Int {
-	return core.S256(st.PopBigInt())
-}
-
 // PopBigInt pop big int from stack
 func (st *Stack) PopBigInt() *big.Int {
 	if st.ptr == 0 {
