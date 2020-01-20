@@ -35,15 +35,32 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 	}
 }
 
+// PushUint64 push uint64 into stack
+func (st *Stack) PushUint64(i uint64) {
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetUint64(i))
+	} else {
+		st.PushBigInt(new(big.Int).SetUint64(i))
+	}
+}
+
+// PopUint64 pop uint64 from stack
+func (st *Stack) PopUint64() uint64 {
+	bi := st.PopBigInt()
+	if !bi.IsUint64() {
+		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
+		return 0
+	}
+	return bi.Uint64()
+}
+
 // Push push core.Word256 into stack
 func (st *Stack) Push(word core.Word256) {
-	err := st.ensureCapacity(uint64(st.ptr) + 1)
-	if err != nil {
-		st.pushErr(errors.DataStackOverflow)
-		return
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetBytes(word.Bytes()))
+	} else {
+		st.PushBigInt(new(big.Int).SetBytes(word.Bytes()))
 	}
-	st.data[st.ptr] = new(big.Int).SetBytes(word.Bytes())
-	st.ptr++
 }
 
 // Pop pos a core.Word256 from the stak
@@ -66,25 +83,6 @@ func (st *Stack) PushBytes(bz []byte) {
 // PushAddress push address into stack
 func (st *Stack) PushAddress(address Address) {
 	st.Push(core.BytesToWord256(address.Bytes()))
-}
-
-// PushUint64 push uint64 into stack
-func (st *Stack) PushUint64(i uint64) {
-	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
-		st.PushBigInt(st.data[st.ptr].SetUint64(i))
-	} else {
-		st.PushBigInt(new(big.Int).SetUint64(i))
-	}
-}
-
-// PopUint64 pop uint64 from stack
-func (st *Stack) PopUint64() uint64 {
-	bi := st.PopBigInt()
-	if !bi.IsUint64() {
-		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
-		return 0
-	}
-	return bi.Uint64()
 }
 
 // PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
