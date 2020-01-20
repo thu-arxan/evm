@@ -443,14 +443,24 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 
 		case SGT: // 0x13
 			maybe.PushError(useGasNegative(ctx.Gas, gas.VeryLow))
-			x, y := math.S256(stack.PopBigInt()), math.S256(stack.PeekBigInt())
+			x, y := stack.PopBigInt(), stack.PeekBigInt()
 			if debug {
 				log.Debugf("  %v > %v", x, y)
 			}
-			if x.Cmp(y) > 0 {
-				y.SetUint64(1)
-			} else {
+			xSign := x.Cmp(tt255)
+			ySign := y.Cmp(tt255)
+
+			switch {
+			case xSign >= 0 && ySign < 0:
 				y.SetUint64(0)
+			case xSign < 0 && ySign >= 0:
+				y.SetUint64(1)
+			default:
+				if x.Cmp(y) > 0 {
+					y.SetUint64(1)
+				} else {
+					y.SetUint64(0)
+				}
 			}
 
 		case EQ: // 0x14
