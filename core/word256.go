@@ -40,6 +40,11 @@ func (w Word256) Copy() Word256 {
 	return w
 }
 
+// SetBytes set word256
+func (w *Word256) SetBytes(bs []byte) {
+	copy(w[:], bs)
+}
+
 // Bytes return the bytes of word256
 func (w Word256) Bytes() []byte {
 	return w[:]

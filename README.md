@@ -2,7 +2,7 @@
 
 evm实现了以太坊黄皮书中设计的虚拟机，可用于运行solidity编写的智能合约。
 
-## 1.项目结构
+## 1. 项目结构
 
 ```shell
 |
@@ -23,7 +23,7 @@ evm实现了以太坊黄皮书中设计的虚拟机，可用于运行solidity编
 |- interface.go //接口定义
 |- opcodes.go   //汇编表
 |- memory.go    //evm存储实现
-|- stack.go			//evm存储实现
+|- stack.go     //evm存储实现
 ```
 
 ## 2. 要实现的几类接口
@@ -98,7 +98,7 @@ Exist(address Address) bool
 GetAccount(address Address) Account
 // Note: GetStorage return nil if key is not exist
 GetStorage(address Address, key []byte) (value []byte)
-// if db is used as cache, updated and removed account need to be synced to 
+// if db is used as cache, updated and removed account need to be synced to
 // database by writeBatch once execution finished
 NewWriteBatch() WriteBatch
 ```

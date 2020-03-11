@@ -4,6 +4,7 @@ import (
 	"math/big"
 )
 
+// Big1 is big int of 1
 var Big1 = big.NewInt(1)
 
 // Big256 is the big.Int of 256

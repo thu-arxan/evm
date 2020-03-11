@@ -45,7 +45,7 @@ func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, pa
 	output, err := vm.Call(caller, mathAddress, mathCode)
 	require.NoError(t, err)
 	if gasCost != 0 {
-		require.EqualValues(t, gasCost, gasQuota-gas)
+		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
 	}
 	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
 	return output
