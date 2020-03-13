@@ -18,10 +18,10 @@ package precompile
 
 import (
 	"errors"
-	"evm/gas"
+	"github.com/thu-arxan/evm/gas"
 	"math/big"
 
-	"evm/crypto/bn256"
+	"github.com/thu-arxan/evm/crypto/bn256"
 )
 
 // newCurvePoint unmarshals a binary blob into a bn256 elliptic curve point,

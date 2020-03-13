@@ -17,11 +17,11 @@
 package precompile
 
 import (
-	"evm/util"
-	"evm/util/math"
+	"github.com/thu-arxan/evm/util"
+	"github.com/thu-arxan/evm/util/math"
 	"math/big"
 
-	g "evm/gas"
+	g "github.com/thu-arxan/evm/gas"
 )
 
 // bigModExp implements a native big integer exponential modular operation.

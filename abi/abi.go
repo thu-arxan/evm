@@ -19,7 +19,7 @@ package abi
 import (
 	"bytes"
 	"encoding/json"
-	"evm/core"
+	"github.com/thu-arxan/evm/core"
 	"fmt"
 	"io"
 	"io/ioutil"

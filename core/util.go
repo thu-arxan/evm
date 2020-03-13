@@ -17,7 +17,7 @@
 
 package core
 
-import "evm/util"
+import "github.com/thu-arxan/evm/util"
 
 func randBytes(length int) []byte {
 	var bytes = make([]byte, length)

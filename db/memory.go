@@ -19,8 +19,8 @@ package db
 
 import (
 	"errors"
-	"evm"
-	"evm/util"
+	"github.com/thu-arxan/evm"
+	"github.com/thu-arxan/evm/util"
 )
 
 // Memory is a memory db

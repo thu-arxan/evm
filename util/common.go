@@ -18,7 +18,7 @@
 package util
 
 import (
-	"evm/util/math"
+	"github.com/thu-arxan/evm/util/math"
 	"math/big"
 )
 

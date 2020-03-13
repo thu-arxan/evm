@@ -9,10 +9,10 @@ vet:
 
 # test:
 test:
-	@$(GOCMD) test -count=1 evm/util
-	@$(GOCMD) test -count=1 evm/core
-	@$(GOCMD) test -count=1 evm/abi
-	@$(GOCMD) test -count=1 evm/tests
+	@$(GOCMD) test -count=1 github.com/thu-arxan/evm/util
+	@$(GOCMD) test -count=1 github.com/thu-arxan/evm/core
+	@$(GOCMD) test -count=1 github.com/thu-arxan/evm/abi
+	@$(GOCMD) test -count=1 github.com/thu-arxan/evm/tests
 
 # sol will compile solidity code
 sol:

@@ -20,7 +20,7 @@ import (
 	"math/big"
 	"reflect"
 
-	"evm/util/math"
+	"github.com/thu-arxan/evm/util/math"
 )
 
 var (

@@ -19,22 +19,22 @@ package evm
 
 import (
 	"bytes"
-	"evm/util/math"
+	"github.com/thu-arxan/evm/util/math"
 	"math/big"
 
-	"evm/core"
-	"evm/errors"
-	"evm/gas"
-	"evm/precompile"
-	"evm/util"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/errors"
+	"github.com/thu-arxan/evm/gas"
+	"github.com/thu-arxan/evm/precompile"
+	"github.com/thu-arxan/evm/util"
 
-	"evm/crypto"
+	"github.com/thu-arxan/evm/crypto"
 
 	"github.com/sirupsen/logrus"
 )
 
 var (
-	log   = logrus.WithFields(logrus.Fields{"package": "evm"})
+	log   = logrus.WithFields(logrus.Fields{"package": "github.com/thu-arxan/evm"})
 	debug = false
 )
 

@@ -28,9 +28,9 @@ import (
 	"github.com/stretchr/testify/require"
 	"golang.org/x/crypto/sha3"
 
-	"evm/core"
-	"evm/crypto"
-	"evm/util"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/crypto"
+	"github.com/thu-arxan/evm/util"
 )
 
 const jsondata = `

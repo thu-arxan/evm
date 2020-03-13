@@ -20,7 +20,7 @@ package core
 import (
 	"bytes"
 	"encoding/binary"
-	"evm/util"
+	"github.com/thu-arxan/evm/util"
 	"math/big"
 
 	hex "github.com/tmthrgd/go-hex"

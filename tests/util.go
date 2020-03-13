@@ -18,8 +18,8 @@
 package tests
 
 import (
-	"evm"
-	abi "evm/abi"
+	"github.com/thu-arxan/evm"
+	abi "github.com/thu-arxan/evm/abi"
 	"fmt"
 	"testing"
 

@@ -19,7 +19,7 @@ package tests
 
 import (
 	"errors"
-	"evm"
+	"github.com/thu-arxan/evm"
 )
 
 // Account is account

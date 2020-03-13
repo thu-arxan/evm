@@ -20,7 +20,7 @@ import (
 	"fmt"
 	"strings"
 
-	"evm/crypto"
+	"github.com/thu-arxan/evm/crypto"
 )
 
 // Method represents a callable given a `Name` and whether the method is a constant.

@@ -20,8 +20,8 @@ import (
 	"math/big"
 	"reflect"
 
-	"evm/util"
-	"evm/util/math"
+	"github.com/thu-arxan/evm/util"
+	"github.com/thu-arxan/evm/util/math"
 )
 
 // packBytesSlice packs the given bytes as [L, V] as the canonical representation

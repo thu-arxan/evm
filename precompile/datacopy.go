@@ -16,7 +16,7 @@
 
 package precompile
 
-import "evm/gas"
+import "github.com/thu-arxan/evm/gas"
 
 // data copy implemented as a native contract.
 type dataCopy struct{}

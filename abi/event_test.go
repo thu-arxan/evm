@@ -20,7 +20,7 @@ import (
 	"bytes"
 	"encoding/hex"
 	"encoding/json"
-	"evm/util"
+	"github.com/thu-arxan/evm/util"
 	"math/big"
 	"reflect"
 	"strings"

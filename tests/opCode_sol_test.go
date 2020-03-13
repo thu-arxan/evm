@@ -18,10 +18,10 @@
 package tests
 
 import (
-	"evm"
-	"evm/db"
-	"evm/example"
-	"evm/util"
+	"github.com/thu-arxan/evm"
+	"github.com/thu-arxan/evm/db"
+	"github.com/thu-arxan/evm/example"
+	"github.com/thu-arxan/evm/util"
 
 	"testing"
 

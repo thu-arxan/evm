@@ -18,7 +18,7 @@
 package tests
 
 import (
-	"evm/util"
+	"github.com/thu-arxan/evm/util"
 	"fmt"
 )
 

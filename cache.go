@@ -18,9 +18,10 @@
 package evm
 
 import (
-	"evm/core"
-	"evm/util"
 	"fmt"
+
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/util"
 )
 
 // Cache cache on a DB.

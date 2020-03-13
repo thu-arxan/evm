@@ -20,7 +20,7 @@ import (
 	"encoding/binary"
 	"errors"
 
-	"evm/crypto/blake2b"
+	"github.com/thu-arxan/evm/crypto/blake2b"
 )
 
 type blake2F struct{}

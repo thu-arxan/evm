@@ -17,8 +17,8 @@
 package abi
 
 import (
-	"evm/core"
-	"evm/crypto"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/crypto"
 	"fmt"
 	"strings"
 )

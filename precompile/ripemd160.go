@@ -17,8 +17,8 @@
 package precompile
 
 import (
-	"evm/gas"
-	"evm/util"
+	"github.com/thu-arxan/evm/gas"
+	"github.com/thu-arxan/evm/util"
 
 	"golang.org/x/crypto/ripemd160"
 )

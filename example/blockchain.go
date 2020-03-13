@@ -17,7 +17,7 @@
 
 package example
 
-import "evm"
+import "github.com/thu-arxan/evm"
 
 // Blockchain is the implementation of blockchain
 type Blockchain struct {

@@ -18,7 +18,7 @@
 package core
 
 import (
-	"evm/util"
+	"github.com/thu-arxan/evm/util"
 	"testing"
 
 	"github.com/stretchr/testify/require"

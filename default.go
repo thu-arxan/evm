@@ -18,8 +18,8 @@
 package evm
 
 import (
-	"evm/crypto"
-	"evm/rlp"
+	"github.com/thu-arxan/evm/crypto"
+	"github.com/thu-arxan/evm/rlp"
 )
 
 // This file defines some default funcion if the user do not want to implement it by themself.

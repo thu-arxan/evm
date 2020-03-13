@@ -18,7 +18,7 @@ package precompile
 
 import (
 	"crypto/sha256"
-	"evm/gas"
+	"github.com/thu-arxan/evm/gas"
 )
 
 // SHA256 implemented as a native contract.

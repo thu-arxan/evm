@@ -18,7 +18,7 @@
 package tests
 
 import (
-	"evm"
+	"github.com/thu-arxan/evm"
 )
 
 // Blockchain is the blockchain, which is used for testting, it will cooperated with address

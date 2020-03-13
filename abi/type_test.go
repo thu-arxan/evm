@@ -17,8 +17,8 @@
 package abi
 
 import (
-	"evm/core"
-	"evm/util"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/util"
 	"math/big"
 	"reflect"
 	"testing"

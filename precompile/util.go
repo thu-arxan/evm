@@ -17,7 +17,7 @@
 
 package precompile
 
-import "evm/util"
+import "github.com/thu-arxan/evm/util"
 
 func allZero(b []byte) bool {
 	for _, byte := range b {

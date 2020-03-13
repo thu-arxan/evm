@@ -17,7 +17,7 @@
 
 package example
 
-import "evm/util"
+import "github.com/thu-arxan/evm/util"
 
 // Address is the address
 type Address [20]byte

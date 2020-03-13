@@ -18,7 +18,7 @@
 package evm
 
 import (
-	"evm/core"
+	"github.com/thu-arxan/evm/core"
 	"fmt"
 )
 

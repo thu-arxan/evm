@@ -17,11 +17,11 @@
 package precompile
 
 import (
-	"evm/gas"
-	"evm/util"
+	"github.com/thu-arxan/evm/gas"
+	"github.com/thu-arxan/evm/util"
 	"math/big"
 
-	"evm/crypto"
+	"github.com/thu-arxan/evm/crypto"
 )
 
 // ECRECOVER implemented as a native contract.

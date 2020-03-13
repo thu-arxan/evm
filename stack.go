@@ -18,13 +18,13 @@
 package evm
 
 import (
-	"evm/core"
-	"evm/util"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/util"
 	"fmt"
 	"math"
 	"math/big"
 
-	"evm/errors"
+	"github.com/thu-arxan/evm/errors"
 )
 
 // Stack is the stack that support the running of evm

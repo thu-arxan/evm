@@ -22,8 +22,8 @@ import (
 	"math"
 	"math/big"
 
-	"evm/errors"
-	"evm/gas"
+	"github.com/thu-arxan/evm/errors"
+	"github.com/thu-arxan/evm/gas"
 )
 
 const (

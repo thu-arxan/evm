@@ -19,8 +19,8 @@ package core
 
 import (
 	"errors"
-	"evm/crypto"
-	"evm/util/math"
+	"github.com/thu-arxan/evm/crypto"
+	"github.com/thu-arxan/evm/util/math"
 )
 
 // Account defines an account structure

@@ -18,9 +18,9 @@ package abi
 
 import (
 	"encoding/binary"
-	"evm/core"
-	"evm/util"
-	"evm/util/math"
+	"github.com/thu-arxan/evm/core"
+	"github.com/thu-arxan/evm/util"
+	"github.com/thu-arxan/evm/util/math"
 	"fmt"
 	"math/big"
 	"reflect"

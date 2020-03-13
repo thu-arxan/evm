@@ -18,11 +18,11 @@
 package tests
 
 import (
-	"evm"
-	abi "evm/abi"
-	"evm/db"
-	"evm/example"
-	"evm/util"
+	"github.com/thu-arxan/evm"
+	abi "github.com/thu-arxan/evm/abi"
+	"github.com/thu-arxan/evm/db"
+	"github.com/thu-arxan/evm/example"
+	"github.com/thu-arxan/evm/util"
 	"fmt"
 	"testing"
 
