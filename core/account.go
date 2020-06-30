@@ -91,11 +91,23 @@ func (a *Account) HasSuicide() bool {
 // Note: Please reimplement this if account structure changed
 func (a *Account) Copy() *Account {
 	var account Account
-	account.code = make([]byte, len(a.code))
-	copy(account.code[:], a.code[:])
+	account.code = CopyBytes(a.code)
 	account.address = a.address.Copy()
 	account.balance = a.balance
 	account.nonce = a.nonce
 	account.suicided = a.suicided
 	return &account
+}
+
+// CopyBytes copy bytes
+func CopyBytes(origin []byte) []byte {
+	if origin == nil {
+		return nil
+	}
+	var res = make([]byte, len(origin))
+	// for i := range origin {
+	// 	res[i] = origin[i]
+	// }
+	copy(res, origin)
+	return res
 }
