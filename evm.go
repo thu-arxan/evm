@@ -954,6 +954,7 @@ func (evm *EVM) call(caller, callee Address, code []byte) ([]byte, error) {
 				if maybe.Error() == nil {
 					newAccount := evm.getAccount(newAccountAddress)
 					newAccount.SetCode(ret)
+					evm.cache.UpdateAccount(newAccount)
 					stack.PushAddress(newAccountAddress)
 				}
 			}

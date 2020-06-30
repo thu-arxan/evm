@@ -60,7 +60,7 @@ func (cache *Cache) UpdateAccount(account Account) error {
 	if accInfo.account.HasSuicide() {
 		return fmt.Errorf("UpdateAccount on a removed account: %s", account.GetAddress())
 	}
-	accInfo.account = account
+	accInfo.account = account.Copy()
 	accInfo.updated = true
 	return nil
 }
