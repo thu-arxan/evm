@@ -51,7 +51,7 @@ func (cache *Cache) HasSuicide(addr Address) bool {
 
 // GetAccount return the account of address
 func (cache *Cache) GetAccount(addr Address) Account {
-	return cache.get(addr).account
+	return cache.get(addr).account.Copy()
 }
 
 // UpdateAccount set account
