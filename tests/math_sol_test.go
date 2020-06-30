@@ -1,3 +1,20 @@
+//  Copyright 2020 The THU-Arxan Authors
+//  This file is part of the evm library.
+//
+//  The evm library is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  The evm library is distributed in the hope that it will be useful,/
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public License
+//  along with the evm library. If not, see <http://www.gnu.org/licenses/>.
+//
+
 package tests
 
 import (
@@ -45,7 +62,7 @@ func callMath(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address, pa
 	output, err := vm.Call(caller, mathAddress, mathCode)
 	require.NoError(t, err)
 	if gasCost != 0 {
-		require.EqualValues(t, gasCost, gasQuota-gas)
+		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
 	}
 	require.EqualValues(t, refund, vm.GetRefund(), fmt.Sprintf("Except refund %d other than %d", refund, vm.GetRefund()))
 	return output

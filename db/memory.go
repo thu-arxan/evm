@@ -1,10 +1,26 @@
+//  Copyright 2020 The THU-Arxan Authors
+//  This file is part of the evm library.
+//
+//  The evm library is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  The evm library is distributed in the hope that it will be useful,/
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public License
+//  along with the evm library. If not, see <http://www.gnu.org/licenses/>.
+//
+
 package db
 
 import (
 	"errors"
 	"evm"
 	"evm/util"
-	"fmt"
 )
 
 // Memory is a memory db
@@ -54,8 +70,8 @@ func (m *Memory) Exist(address evm.Address) bool {
 // GetAccount is the implementation of interface
 func (m *Memory) GetAccount(address evm.Address) evm.Account {
 	key := string(address.Bytes())
-	if util.Contain(m.accounts, key) {
-		return m.accounts[key].account
+	if account, ok := m.accounts[key]; ok {
+		return account.account
 	}
 	account := m.accountFunc(address)
 	m.accounts[key] = &accountInfo{
@@ -66,9 +82,9 @@ func (m *Memory) GetAccount(address evm.Address) evm.Account {
 
 // GetStorage is the implementation of interface
 func (m *Memory) GetStorage(address evm.Address, key []byte) []byte {
-	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key)
-	if util.Contain(m.storages, storageKey) {
-		return m.storages[storageKey]
+	storageKey := string(util.BytesCombine(address.Bytes(), key))
+	if value, ok := m.storages[storageKey]; ok {
+		return value
 	}
 	return nil
 }
@@ -80,7 +96,7 @@ func (m *Memory) NewWriteBatch() evm.WriteBatch {
 
 // SetStorage is the implementation of interface
 func (m *Memory) SetStorage(address evm.Address, key, value []byte) {
-	storageKey := fmt.Sprintf("%s:%s", address.Bytes(), key)
+	storageKey := string(util.BytesCombine(address.Bytes(), key))
 	m.storages[storageKey] = value
 }
 

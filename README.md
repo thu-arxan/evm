@@ -1,10 +1,30 @@
-# README
+# 文档
 
-// 先用中文写好了。
+evm实现了以太坊黄皮书中设计的虚拟机，可用于运行solidity编写的智能合约。
 
-## 1. Example
+## 1. 项目结构
 
-在项目的example中有一个简单样例用来描述如何使用EVM虚拟机及如何调用。
+```shell
+|
+|- abi          //实现了外部调用智能合约的格式转换工具
+|- core         //实现了一些接口
+|- crypto       //密码学相关函数实现
+|- db           //数据库实现
+|- errors       //错误码定义
+|- example      //示例，可参考example/README.md
+|- gas          //汇编代码消耗的gas定义
+|- precompile   //本地合约，golang实现
+|- rlp          //编解码算法
+|- tests        //测试
+|- util         //公共函数
+|- cache.go     //缓存，加速数据库操作
+|- context.go   //evm运行上下文
+|- evm.go       //汇编实现
+|- interface.go //接口定义
+|- opcodes.go   //汇编表
+|- memory.go    //evm存储实现
+|- stack.go     //evm存储实现
+```
 
 ## 2. 要实现的几类接口
 
@@ -12,16 +32,21 @@
 
 ```golang
 type Account interface {
+// Getter of account address / code / balance
+// Setter of account code / balance
 GetAddress() Address
 GetBalance() uint64
 AddBalance(balance uint64) error
 SubBalance(balance uint64) error
 GetCode() []byte
 SetCode(code []byte)
-// GetCodeHash return the hash of account code, please return [32]byte, and return [32]byte{0, ..., 0} if code is empty
+// GetCodeHash return the hash of account code, please return [32]byte, and // // return [32]byte{0, ..., 0} if code is empty
 GetCodeHash() []byte
 GetNonce() uint64
 SetNonce(nonce uint64)
+// Suicide will suicide an account
+Suicide()
+HasSuicide() bool
 }
 ```
 
@@ -29,6 +54,7 @@ SetNonce(nonce uint64)
 
 - Nonce: Nonce需要是自增的（有些案例中交易为了随机性会有一个交易Nonce，这两者不一定要等价，虽然以太坊中是等价的）。
 - GetCodeHash：允许用户自己实现code的哈希函数，如果用户返回nil则会调用Keccak256函数，这一点和以太坊保持一致。
+- 对Balance的相关操作要注意溢出的错误处理。
 
 ### 2.2. Address
 
@@ -60,7 +86,7 @@ function info() public view returns (address, uint) {
 
 ### 2.3. DB & WriteBatch
 
-二者暂定接口如下,关于二者的定义，还需要进一步明确一下边界情况。
+底层数据库存储每个账户及其拥有的kv storage。当DB作为交易执行的cache使用时，交易完成后需要把更新及删除的账户状态写入底层数据库，这个过程使用batch执行来加速。
 
 #### 2.3.1. DB
 
@@ -71,16 +97,20 @@ Exist(address Address) bool
 // GetStorage return a default account if unexist
 GetAccount(address Address) Account
 // Note: GetStorage return nil if key is not exist
-GetStorage(address Address, key core.Word256) (value []byte)
+GetStorage(address Address, key []byte) (value []byte)
+// if db is used as cache, updated and removed account need to be synced to
+// database by writeBatch once execution finished
+NewWriteBatch() WriteBatch
 ```
+
+如果一个账户在交易执行过程中执行了selfdestruct汇编指令，会被标记为suicided，这说明该账户曾经存在过，在底层数据库中有相应的kv存储。由于Exist通常（ethereum里）在创建新账户的时候被调用，由于底层数据库和cache中还没有清除该账户的信息，创建新账户不需要过多操作，可以不用收取多余的gas。
 
 #### 2.3.2. WriteBatch
 
 ```golang
-SetStorage(address Address, key core.Word256, value []byte)
+SetStorage(address Address, key []byte, value []byte)
+// Note: db should delete all storages if an account suicide
 UpdateAccount(account Account) error
-// Remove the account at address
-RemoveAccount(address Address) error
 AddLog(log *Log)
 ```
 
@@ -98,12 +128,8 @@ NewAccount(address Address) Account
 BytesToAddress(bytes []byte) Address
 ```
 
-- GetBlockHash：返回高度为num的区块哈希。
+- GetBlockHash：返回高度为num的区块哈希，注意num < block height 且 > blockheight - 257。
 - CreateAddress：用户自定义的创建地址函数（对应CREATE指令），如果不想实现可以直接返回nil，EVM执行时会采取与以太坊相同的方式处理。
 - Create2Address：用户自定义的创建地址函数（对应CREATE2指令），如果不想实现可以直接返回nil，EVM执行时会采取与以太坊相同的方式处理。
 - NewAccount：根据一个地址返回默认的账户（请不要在DB里面也插入该账户，需要的时候EVM会调用DB的相关函数去插入）。
 - BytesToAddress：将byte数组(长度一般为32位)解析为用户定义的Address。
-
-## 3. 如何调用
-
-参考example中的README.md

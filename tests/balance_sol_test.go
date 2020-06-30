@@ -1,3 +1,20 @@
+//  Copyright 2020 The THU-Arxan Authors
+//  This file is part of the evm library.
+//
+//  The evm library is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  The evm library is distributed in the hope that it will be useful,/
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public License
+//  along with the evm library. If not, see <http://www.gnu.org/licenses/>.
+//
+
 package tests
 
 import (
@@ -8,7 +25,6 @@ import (
 	"evm/util"
 	"fmt"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 )
@@ -18,7 +34,7 @@ var (
 	balanceAbi       = "sols/Balance_sol_Balance.abi"
 	balanceCode      []byte
 	balanceAddress   evm.Address
-	benckmarkBalance = false
+	benckmarkBalance = true
 )
 
 func TestBalanceSol(t *testing.T) {
@@ -73,48 +89,4 @@ func callBalance(t *testing.T, db evm.DB, bc evm.Blockchain, caller evm.Address,
 		require.EqualValues(t, gasCost, gasQuota-gas, fmt.Sprintf("Except gas cost %d other than %d", gasCost, gasQuota-gas))
 	}
 	return output
-}
-
-func TestBalanceSolBenchmark(t *testing.T) {
-	if !benckmarkBalance {
-		return
-	}
-	bin, err := util.ReadBinFile(balanceBin)
-	require.NoError(t, err)
-	bc := example.NewBlockchain()
-	memoryDB := db.NewMemory(bc.NewAccount)
-	var caller = example.HexToAddress("6ac7ea33f8831ea9dcc53393aaa88b25a785dbf0")
-
-	var begin = time.Now()
-	var size = 10000
-	evm.SetLogLevel("info")
-	for i := 0; i < size; i++ {
-		var gas uint64 = 1000000
-		vm := evm.New(bc, memoryDB, &evm.Context{
-			Input: bin,
-			Value: 0,
-			Gas:   &gas,
-		})
-		_, _, err = vm.Create(caller)
-		require.NoError(t, err)
-	}
-	duration := time.Since(begin)
-	fmt.Printf("deploy balance %d times cost %v\n", size, duration)
-	// then we test call performance
-	balanceAddress = example.HexToAddress("cd234a471b72ba2f1ccf0a70fcaba648a5eecd8d")
-	balanceCode = util.Hex2Bytes("60806040523480156100115760006000fd5b506004361061005c5760003560e01c80631003e2d21461006257806327ee58a6146100a5578063370158ea146100e857806360fe47b1146101395780636d4ce63c146101805761005c565b60006000fd5b61008f600480360360208110156100795760006000fd5b810190808035906020019092919050505061019e565b6040518082815260200191505060405180910390f35b6100d2600480360360208110156100bc5760006000fd5b81019080803590602001909291905050506101c6565b6040518082815260200191505060405180910390f35b6100f06101ee565b604051808373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020018281526020019250505060405180910390f35b610166600480360360208110156101505760006000fd5b8101908080359060200190929190505050610209565b604051808215151515815260200191505060405180910390f35b610188610225565b6040518082815260200191505060405180910390f35b6000816000600082828250540192505081909090555060006000505490506101c1565b919050565b6000816000600082828250540392505081909090555060006000505490506101e9565b919050565b600060003360006000505481915091509150610205565b9091565b600081600060005081909090555060019050610220565b919050565b60006000600050549050610234565b9056fea26469706673582212206d1f7e72f2d26816fe48ff60de6fa42d7b6fb40fc1603494b8c63221cd3c2c2364736f6c63430006000033")
-	var payload = mustPack(balanceAbi, "get")
-	begin = time.Now()
-	for i := 0; i < size; i++ {
-		var gasQuota uint64 = 1000000
-		var gas = gasQuota
-		_, err = evm.New(bc, memoryDB, &evm.Context{
-			Input: payload,
-			Value: 0,
-			Gas:   &gas,
-		}).Call(caller, balanceAddress, balanceCode)
-		require.NoError(t, err)
-	}
-	duration = time.Since(begin)
-	fmt.Printf("call balance %d times cost %v\n", size, duration)
 }

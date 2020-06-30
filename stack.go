@@ -1,3 +1,20 @@
+//  Copyright 2020 The THU-Arxan Authors
+//  This file is part of the evm library.
+//
+//  The evm library is free software: you can redistribute it and/or modify
+//  it under the terms of the GNU Lesser General Public License as published by
+//  the Free Software Foundation, either version 3 of the License, or
+//  (at your option) any later version.
+//
+//  The evm library is distributed in the hope that it will be useful,/
+//  but WITHOUT ANY WARRANTY; without even the implied warranty of
+//  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+//  GNU Lesser General Public License for more details.
+//
+//  You should have received a copy of the GNU Lesser General Public License
+//  along with the evm library. If not, see <http://www.gnu.org/licenses/>.
+//
+
 package evm
 
 import (
@@ -13,7 +30,8 @@ import (
 // Stack is the stack that support the running of evm
 // Note: The stack is not thread safety
 type Stack struct {
-	data        []core.Word256
+	// data        []core.Word256
+	data        []*big.Int
 	maxCapacity uint64
 	ptr         int
 
@@ -26,7 +44,7 @@ type Stack struct {
 // NewStack is the constructor of Stack
 func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink errors.Sink, toAddressFunc func(bytes []byte) Address) *Stack {
 	return &Stack{
-		data:          make([]core.Word256, initialCapacity),
+		data:          make([]*big.Int, initialCapacity),
 		maxCapacity:   maxCapacity,
 		gas:           gas,
 		errSink:       errSink,
@@ -34,16 +52,42 @@ func NewStack(initialCapacity uint64, maxCapacity uint64, gas *uint64, errSink e
 	}
 }
 
-// Push push core.Word256 into stack
-func (st *Stack) Push(word core.Word256) {
-	// st.useGas(GasStackOp)
+// PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
+func (st *Stack) PushBigInt(bigInt *big.Int) {
 	err := st.ensureCapacity(uint64(st.ptr) + 1)
 	if err != nil {
 		st.pushErr(errors.DataStackOverflow)
-		return
 	}
-	st.data[st.ptr] = word
+	st.data[st.ptr] = bigInt
 	st.ptr++
+}
+
+// PopBigInt pop big int from stack
+func (st *Stack) PopBigInt() *big.Int {
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
+	}
+	st.ptr--
+	return st.data[st.ptr]
+}
+
+// PeekBigInt peek big int from stack
+func (st *Stack) PeekBigInt() *big.Int {
+	if st.ptr == 0 {
+		st.pushErr(errors.DataStackUnderflow)
+		return new(big.Int).SetUint64(0)
+	}
+	return st.data[st.ptr-1]
+}
+
+// Push push core.Word256 into stack
+func (st *Stack) Push(word core.Word256) {
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetBytes(word.Bytes()))
+	} else {
+		st.PushBigInt(new(big.Int).SetBytes(word.Bytes()))
+	}
 }
 
 // Pop pos a core.Word256 from the stak
@@ -53,7 +97,8 @@ func (st *Stack) Pop() core.Word256 {
 		return core.Zero256
 	}
 	st.ptr--
-	return st.data[st.ptr]
+	i := st.data[st.ptr]
+	return core.BytesToWord256(i.Bytes())
 }
 
 // PushBytes push bytes into stack, bytes length would fixed to 32
@@ -69,35 +114,21 @@ func (st *Stack) PushAddress(address Address) {
 
 // PushUint64 push uint64 into stack
 func (st *Stack) PushUint64(i uint64) {
-	st.Push(core.Uint64ToWord256(i))
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].SetUint64(i))
+	} else {
+		st.PushBigInt(new(big.Int).SetUint64(i))
+	}
 }
 
 // PopUint64 pop uint64 from stack
 func (st *Stack) PopUint64() uint64 {
-	word := st.Pop()
-	if Is64BitOverflow(word) {
-		st.pushErr(fmt.Errorf("uint64 overflow from word: %v", word))
+	bi := st.PopBigInt()
+	if !bi.IsUint64() {
+		st.pushErr(fmt.Errorf("uint64 overflow from : %v", bi))
 		return 0
 	}
-	return core.Uint64FromWord256(word)
-}
-
-// PushBigInt push the bigInt as a core.Word256 encoding negative values in 32-byte twos complement and returns the encoded result
-func (st *Stack) PushBigInt(bigInt *big.Int) core.Word256 {
-	word := core.LeftPadWord256(core.U256(bigInt).Bytes())
-	st.Push(word)
-	return word
-}
-
-// PopSignedBigInt pop signed big int from stack
-func (st *Stack) PopSignedBigInt() *big.Int {
-	return core.S256(st.PopBigInt())
-}
-
-// PopBigInt pop big int from stack
-func (st *Stack) PopBigInt() *big.Int {
-	word := st.Pop()
-	return new(big.Int).SetBytes(word[:])
+	return bi.Uint64()
 }
 
 // PopBytes pop bytes from stack
@@ -120,7 +151,6 @@ func (st *Stack) Len() int {
 
 // Swap swap stack
 func (st *Stack) Swap(n int) {
-	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
@@ -130,12 +160,15 @@ func (st *Stack) Swap(n int) {
 
 // Dup duplicate stack
 func (st *Stack) Dup(n int) {
-	// st.useGas(GasStackOp)
 	if st.ptr < n {
 		st.pushErr(errors.DataStackUnderflow)
 		return
 	}
-	st.Push(st.data[st.ptr-n])
+	if len(st.data) > st.ptr && st.data[st.ptr] != nil {
+		st.PushBigInt(st.data[st.ptr].Set(st.data[st.ptr-n]))
+	} else {
+		st.PushBigInt(new(big.Int).Set(st.data[st.ptr-n]))
+	}
 }
 
 // Peek peek the stack element
@@ -144,7 +177,8 @@ func (st *Stack) Peek() core.Word256 {
 		st.pushErr(errors.DataStackUnderflow)
 		return core.Zero256
 	}
-	return st.data[st.ptr-1]
+	word := core.BytesToWord256(st.data[st.ptr-1].Bytes())
+	return word
 }
 
 // Print print stack status
@@ -163,16 +197,6 @@ func (st *Stack) Print(n int) {
 		fmt.Println("-- empty --")
 	}
 	fmt.Println("#############")
-}
-
-// Is64BitOverflow return if the word overflow
-func Is64BitOverflow(word core.Word256) bool {
-	for i := 0; i < len(word)-8; i++ {
-		if word[i] != 0 {
-			return true
-		}
-	}
-	return false
 }
 
 // Ensures the current stack can hold a new element. Will only grow the
@@ -201,21 +225,13 @@ func (st *Stack) ensureCapacity(newCapacity uint64) error {
 	// the data's backing array.
 	for newCapacityInt > cap(st.data) {
 		// We'll trust Go exponentially grow our arrays (at first).
-		st.data = append(st.data, core.Zero256)
+		st.data = append(st.data, new(big.Int))
 	}
 	// Now we've ensured the backing array of the data is big enough we can
 	// just re-data (even if len(mem.data) < newCapacity)
 	st.data = st.data[:newCapacity]
 	return nil
 }
-
-// func (st *Stack) useGas(gasToUse uint64) {
-// 	if *st.gas > gasToUse {
-// 		*st.gas -= gasToUse
-// 	} else {
-// 		st.pushErr(errors.InsufficientGas)
-// 	}
-// }
 
 func (st *Stack) pushErr(err error) {
 	st.errSink.PushError(err)
