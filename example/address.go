@@ -10,6 +10,13 @@ func (a *Address) Bytes() []byte {
 	return a[:]
 }
 
+// Copy return the copy of address
+func (a *Address) Copy() *Address {
+	var ret Address
+	copy(ret[:], a.Bytes())
+	return &ret
+}
+
 // BytesToAddress convert bytes to address
 func BytesToAddress(bytes []byte) *Address {
 	var a Address

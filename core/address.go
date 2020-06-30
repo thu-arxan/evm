@@ -27,6 +27,13 @@ func (address Address) Bytes() []byte {
 	return Word160(address).Bytes()
 }
 
+// Copy return the copy of AccountAddress
+func (address *Address) Copy() *Address {
+	var ret Address
+	copy(ret[:], address.Bytes())
+	return &ret
+}
+
 // AddressFromBytes returns an addres. It will cut left if len(bs) > 20, else add zeros at left if len(bs) < 20
 func AddressFromBytes(bs []byte) (address Address) {
 	if len(bs) > Word160Length {

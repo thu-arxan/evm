@@ -46,6 +46,13 @@ func (a *Address) Bytes() []byte {
 	return bytes
 }
 
+// Copy return the copy of address
+func (a *Address) Copy() *Address {
+	var ret Address
+	copy(ret.value[:], a.Bytes())
+	return &ret
+}
+
 // Length return the length of address
 func (a *Address) Length() int {
 	return AddressLength

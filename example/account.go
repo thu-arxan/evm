@@ -7,11 +7,11 @@ import (
 
 // Account is account
 type Account struct {
-	addr    *Address
-	code    []byte
-	balance uint64
-	nonce   uint64
-	suicide bool
+	addr     *Address
+	code     []byte
+	balance  uint64
+	nonce    uint64
+	suicided bool
 }
 
 // NewAccount is the constructor of Account
@@ -75,10 +75,23 @@ func (a *Account) SetNonce(nonce uint64) {
 
 // Suicide is the implementation of interface
 func (a *Account) Suicide() {
-	a.suicide = true
+	a.suicided = true
 }
 
 // HasSuicide is the implementation of interface
 func (a *Account) HasSuicide() bool {
-	return a.suicide
+	return a.suicided
+}
+
+// Copy return a copy of an account
+// Note: Please reimplement this if account structure changed
+func (a *Account) Copy() evm.Account {
+	var account Account
+	account.code = make([]byte, len(a.code))
+	copy(account.code[:], a.code[:])
+	account.addr = a.addr.Copy()
+	account.balance = a.balance
+	account.nonce = a.nonce
+	account.suicided = a.suicided
+	return &account
 }
