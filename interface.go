@@ -35,6 +35,8 @@ type Account interface {
 	// Suicide will suicide an account
 	Suicide()
 	HasSuicide() bool
+
+	Copy() Account
 }
 
 // Address describe what functions that an Address implementation should provide

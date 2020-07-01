@@ -25,10 +25,11 @@ import (
 
 // Account defines an account structure
 type Account struct {
-	address *Address
-	code    []byte
-	balance uint64
-	nonce   uint64
+	address  *Address
+	code     []byte
+	balance  uint64
+	nonce    uint64
+	suicided bool
 }
 
 // NewAccount is the constructor of Account
@@ -91,4 +92,39 @@ func (a *Account) GetNonce() uint64 {
 // SetNonce set the nonce of account
 func (a *Account) SetNonce(nonce uint64) {
 	a.nonce = nonce
+}
+
+// Suicide suicide an account
+func (a *Account) Suicide() {
+	a.suicided = true
+}
+
+// HasSuicide return if an account has suicided
+func (a *Account) HasSuicide() bool {
+	return a.suicided == true
+}
+
+// Copy return a copy of an account
+// Note: Please reimplement this if account structure changed
+func (a *Account) Copy() *Account {
+	var account Account
+	account.code = CopyBytes(a.code)
+	account.address = a.address.Copy()
+	account.balance = a.balance
+	account.nonce = a.nonce
+	account.suicided = a.suicided
+	return &account
+}
+
+// CopyBytes copy bytes
+func CopyBytes(origin []byte) []byte {
+	if origin == nil {
+		return nil
+	}
+	var res = make([]byte, len(origin))
+	// for i := range origin {
+	// 	res[i] = origin[i]
+	// }
+	copy(res, origin)
+	return res
 }

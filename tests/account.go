@@ -99,3 +99,16 @@ func (a *Account) Suicide() {
 func (a *Account) HasSuicide() bool {
 	return a.suicide
 }
+
+// Copy return a copy of an account
+// Note: Please reimplement this if account structure changed
+func (a *Account) Copy() evm.Account {
+	var account Account
+	account.code = make([]byte, len(a.code))
+	copy(account.code[:], a.code[:])
+	account.addr = a.addr.Copy()
+	account.balance = a.balance
+	account.nonce = a.nonce
+	account.suicide = a.suicide
+	return &account
+}
